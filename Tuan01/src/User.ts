@@ -1,9 +1,7 @@
 //7. Write a class User with private property name and getter/setter.
 export class User {
-  private uname: string;
-
-  constructor(name: string) {
-    this.uname = name;
+  constructor(private uname: string) {
+    this.uname = uname;
   }
 
   get name(): string {
