@@ -1,6 +1,9 @@
+import { Animal } from "./Animal";
 import { BankAccount } from "./BankAccount";
 import { Book } from "./Book";
 import { Car } from "./Car";
+import { Dog } from "./Dog";
+import { Mouse } from "./Mouse";
 import { Person } from "./Person";
 import { Product } from "./Product";
 import { Rectangle } from "./Rectangle";
@@ -27,6 +30,8 @@ const products: Product[] = [
 // Lọc sản phẩm có giá > 100
 const filterProduct = products.filter((p) => p.price > 100);
 
+const animals: Animal[] = [new Dog("Chó mực"), new Mouse("Chuột đồng")];
+
 person.displayInfo();
 
 student.displayInfo();
@@ -45,3 +50,5 @@ user.displayInfo();
 
 console.log("Sản phẩm có giá > 100:");
 filterProduct.forEach((p) => p.displayInfo());
+
+animals.forEach((p) => p.sound());

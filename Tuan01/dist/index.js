@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BankAccount_1 = require("./BankAccount");
 const Book_1 = require("./Book");
 const Car_1 = require("./Car");
+const Dog_1 = require("./Dog");
+const Mouse_1 = require("./Mouse");
 const Person_1 = require("./Person");
 const Product_1 = require("./Product");
 const Rectangle_1 = require("./Rectangle");
@@ -25,6 +27,7 @@ const products = [
 ];
 // Lọc sản phẩm có giá > 100
 const filterProduct = products.filter((p) => p.price > 100);
+const animals = [new Dog_1.Dog("Chó mực"), new Mouse_1.Mouse("Chuột đồng")];
 person.displayInfo();
 student.displayInfo();
 car.showInfo();
@@ -36,3 +39,4 @@ book.displayInfo();
 user.displayInfo();
 console.log("Sản phẩm có giá > 100:");
 filterProduct.forEach((p) => p.displayInfo());
+animals.forEach((p) => p.sound());
