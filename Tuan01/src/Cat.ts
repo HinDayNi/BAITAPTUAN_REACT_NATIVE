@@ -12,4 +12,8 @@ export class Cat extends Animals {
   meow(): void {
     console.log(`${this.name} says: Meow~`);
   }
+
+  protected sound(): void {
+    console.log("Meow! Meow!");
+  }
 }

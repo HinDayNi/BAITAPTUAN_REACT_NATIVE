@@ -12,5 +12,11 @@ class Animals {
     move() {
         console.log(`${this.name} is moving...`);
     }
+    sound() {
+        console.log("Some generic animal sound...");
+    }
+    speak() {
+        this.sound();
+    }
 }
 exports.Animals = Animals;

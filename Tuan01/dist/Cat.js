@@ -12,5 +12,8 @@ class Cat extends Animals_1.Animals {
     meow() {
         console.log(`${this.name} says: Meow~`);
     }
+    sound() {
+        console.log("Meow! Meow!");
+    }
 }
 exports.Cat = Cat;

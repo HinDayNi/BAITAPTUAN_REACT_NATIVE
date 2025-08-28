@@ -5,7 +5,15 @@ export class Dog extends Animals {
     super(name);
   }
 
+  makeSound(): void {
+    console.log(`${this.name} says: gâu gâu!`);
+  }
+
   bark(): void {
-    console.log(`${this.name} says: Woof! Woof!`);
+    console.log(`${this.name} says: Woof`);
+  }
+
+  protected sound(): void {
+    console.log("Woof! Woof!");
   }
 }

@@ -13,4 +13,12 @@ export class Animals {
   move(): void {
     console.log(`${this.name} is moving...`);
   }
+
+  protected sound(): void {
+    console.log("Some generic animal sound...");
+  }
+
+  speak(): void {
+    this.sound();
+  }
 }
