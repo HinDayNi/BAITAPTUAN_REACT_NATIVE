@@ -1,32 +1,46 @@
 import { Account } from "./Account";
+import { AirConditioner } from "./AirConditioner";
 import { Animal } from "./Animal";
 import { Animals } from "./Animals";
 import { BankAccount } from "./BankAccount";
+import { Bike } from "./Bike";
 import { Bird } from "./Bird";
 import { Book } from "./Book";
 import { Box } from "./Box";
 import { Car } from "./Car";
+import { CardPayment } from "./CardPayment";
+import { Cars } from "./Cars";
+import { CashPayment } from "./CashPayment";
 import { Cat } from "./Cat";
 import { Circle } from "./Circle";
 import { Developer } from "./Developer";
 import { Dog } from "./Dog";
 import { Dogs } from "./Dogs";
+import { Fan } from "./Fan";
 import { Fish } from "./Fish";
 import { Library } from "./Library";
 import { Logger } from "./Logger";
 import { Manager } from "./Manager";
 import { MathUtil } from "./MathUtil";
 import { Mouse } from "./Mouse";
+import { Order } from "./Order";
 import { Person } from "./Person";
 import { Product } from "./Product";
 import { Rectangle } from "./Rectangle";
+import { Repository } from "./Repository";
+import { Robot } from "./Robot";
+import { School } from "./School";
+import { Shape } from "./Shape";
 import { Square } from "./Square";
+import { Stack } from "./Stack";
 import { Student } from "./Student";
+import { Teacher } from "./Teacher";
 import { User } from "./User";
+import { Vehicle } from "./Vehicle";
 
 const person = new Person("Hiền", 21);
 const student = new Student("Hiền", 21, 9.0);
-const car = new Car("HiHa", "Hiền", 2025);
+// const car = new Car("HiHa", "Hiền", 2025);
 const rect = new Rectangle(5, 10);
 const account = new BankAccount(1000);
 const book = new Book("7 viên ngọc rồng", "Toriyama Akira", 2024);
@@ -132,8 +146,103 @@ const account1 = new Account(1, "hien123", "123456");
 // console.log("Divide: ", MathUtil.divide(10, 5)); // 2
 
 //Bài 19
-const animals: Animals[] = [new Dogs("Mực"), new Cat("MiMi")];
-animals.forEach((animal) => animal.makeSound());
+// const animals: Animals[] = [new Dogs("Mực"), new Cat("MiMi")];
+// animals.forEach((animal) => animal.makeSound());
+
+//Bài 20
+// const car1 = new Car("Toyota", "Camry", 2022, 120);
+// car1.start();
+// car1.showInfo();
+// car1.stop();
+
+// const bike = new Bike("Yamaha", "R15", 2021, 80);
+// bike.start();
+// bike.showInfo();
+// bike.stop();
+
+//Bài 21
+// const vehicleRepo = new Repository<Vehicle>();
+
+// vehicleRepo.add(new Car("Toyota", "Camry", 2022, 120));
+// vehicleRepo.add(new Bike("Yamaha", "R15", 2021, 80));
+
+// console.log("All vehicles in repository:");
+// vehicleRepo.getAll().forEach((v) => {
+//   v.showInfo();
+//   v.start();
+// });
+
+//Bài 22
+// // Stack số
+// const numberStack = new Stack<number>();
+// numberStack.push(10);
+// numberStack.push(20);
+
+// console.log("Top:", numberStack.peek()); // 20
+// console.log("Popped:", numberStack.pop()); // 20
+// console.log("Is empty?", numberStack.isEmpty()); // false
+
+// // Stack chuỗi
+// const stringStack = new Stack<string>();
+// stringStack.push("Hello");
+// stringStack.push("World");
+
+// console.log("Top:", stringStack.peek()); // World
+
+//Bài 23
+// const cash = new CashPayment();
+// cash.pay(100);
+
+// const card = new CardPayment("1234-5678-9876-5432");
+// card.pay(250);
+
+//Bài 24
+// const fan = new Fan();
+// fan.turnOn();
+
+// const ac = new AirConditioner();
+// ac.turnOn();
+
+//Bài 25
+// Shape.describe();
+
+//Bài 26
+// const order = new Order();
+
+// order.addProduct(new Product("Laptop", 1200));
+// order.addProduct(new Product("Mouse", 25));
+// order.addProduct(new Product("Keyboard", 45));
+
+// order.showOrder();
+
+//Bài 27
+// const teacher = new Teacher("Alice", 35, "Mathematics");
+// teacher.introduce();
+
+//Bài 28
+// const dog = new Dog("Buddy");
+// dog.speak();
+
+// const cat = new Cat("Kitty");
+// cat.speak();
+
+//Bài 29
+// const car = new Cars("Toyota");
+// const robot = new Robot("R2D2");
+
+// car.move();
+// robot.move();
+
+//Bài 30
+const school = new School();
+
+school.addStudent(new Student("Alice", 20));
+school.addStudent(new Student("Bob", 21));
+
+school.addTeacher(new Teacher("Mr. Smith", 40, "Math"));
+school.addTeacher(new Teacher("Ms. Johnson", 35, "English"));
+
+school.displayInfo();
 
 // person.displayInfo();
 

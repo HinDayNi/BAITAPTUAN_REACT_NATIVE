@@ -3,17 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Account_1 = require("./Account");
 const BankAccount_1 = require("./BankAccount");
 const Book_1 = require("./Book");
-const Car_1 = require("./Car");
-const Cat_1 = require("./Cat");
-const Dogs_1 = require("./Dogs");
 const Person_1 = require("./Person");
 const Product_1 = require("./Product");
 const Rectangle_1 = require("./Rectangle");
+const School_1 = require("./School");
 const Student_1 = require("./Student");
+const Teacher_1 = require("./Teacher");
 const User_1 = require("./User");
 const person = new Person_1.Person("Hiền", 21);
 const student = new Student_1.Student("Hiền", 21, 9.0);
-const car = new Car_1.Car("HiHa", "Hiền", 2025);
+// const car = new Car("HiHa", "Hiền", 2025);
 const rect = new Rectangle_1.Rectangle(5, 10);
 const account = new BankAccount_1.BankAccount(1000);
 const book = new Book_1.Book("7 viên ngọc rồng", "Toriyama Akira", 2024);
@@ -94,8 +93,77 @@ const account1 = new Account_1.Account(1, "hien123", "123456");
 // console.log("Multiply: ", MathUtil.multiply(10, 5)); // 50
 // console.log("Divide: ", MathUtil.divide(10, 5)); // 2
 //Bài 19
-const animals = [new Dogs_1.Dogs("Mực"), new Cat_1.Cat("MiMi")];
-animals.forEach((animal) => animal.makeSound());
+// const animals: Animals[] = [new Dogs("Mực"), new Cat("MiMi")];
+// animals.forEach((animal) => animal.makeSound());
+//Bài 20
+// const car1 = new Car("Toyota", "Camry", 2022, 120);
+// car1.start();
+// car1.showInfo();
+// car1.stop();
+// const bike = new Bike("Yamaha", "R15", 2021, 80);
+// bike.start();
+// bike.showInfo();
+// bike.stop();
+//Bài 21
+// const vehicleRepo = new Repository<Vehicle>();
+// vehicleRepo.add(new Car("Toyota", "Camry", 2022, 120));
+// vehicleRepo.add(new Bike("Yamaha", "R15", 2021, 80));
+// console.log("All vehicles in repository:");
+// vehicleRepo.getAll().forEach((v) => {
+//   v.showInfo();
+//   v.start();
+// });
+//Bài 22
+// // Stack số
+// const numberStack = new Stack<number>();
+// numberStack.push(10);
+// numberStack.push(20);
+// console.log("Top:", numberStack.peek()); // 20
+// console.log("Popped:", numberStack.pop()); // 20
+// console.log("Is empty?", numberStack.isEmpty()); // false
+// // Stack chuỗi
+// const stringStack = new Stack<string>();
+// stringStack.push("Hello");
+// stringStack.push("World");
+// console.log("Top:", stringStack.peek()); // World
+//Bài 23
+// const cash = new CashPayment();
+// cash.pay(100);
+// const card = new CardPayment("1234-5678-9876-5432");
+// card.pay(250);
+//Bài 24
+// const fan = new Fan();
+// fan.turnOn();
+// const ac = new AirConditioner();
+// ac.turnOn();
+//Bài 25
+// Shape.describe();
+//Bài 26
+// const order = new Order();
+// order.addProduct(new Product("Laptop", 1200));
+// order.addProduct(new Product("Mouse", 25));
+// order.addProduct(new Product("Keyboard", 45));
+// order.showOrder();
+//Bài 27
+// const teacher = new Teacher("Alice", 35, "Mathematics");
+// teacher.introduce();
+//Bài 28
+// const dog = new Dog("Buddy");
+// dog.speak();
+// const cat = new Cat("Kitty");
+// cat.speak();
+//Bài 29
+// const car = new Cars("Toyota");
+// const robot = new Robot("R2D2");
+// car.move();
+// robot.move();
+//Bài 30
+const school = new School_1.School();
+school.addStudent(new Student_1.Student("Alice", 20));
+school.addStudent(new Student_1.Student("Bob", 21));
+school.addTeacher(new Teacher_1.Teacher("Mr. Smith", 40, "Math"));
+school.addTeacher(new Teacher_1.Teacher("Ms. Johnson", 35, "English"));
+school.displayInfo();
 // person.displayInfo();
 // student.displayInfo();
 // car.showInfo();

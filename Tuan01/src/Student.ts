@@ -5,12 +5,16 @@ import { Person } from "./Person";
 export class Student extends Person {
   grade: number;
 
-  constructor(name: string, age: number, grade: number) {
+  constructor(name: string, age: number, grade: number = 0) {
     super(name, age);
     this.grade = grade;
   }
   displayInfo(): void {
     super.displayInfo();
     console.log(`Grade: ${this.grade}`);
+  }
+
+  showInfo(): void {
+    console.log(`Student: ${this.name}, Age: ${this.age}`);
   }
 }
