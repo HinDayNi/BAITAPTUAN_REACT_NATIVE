@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Car = void 0;
-//3. Create a class Car with properties brand, model, year. Write a method to show car info.
-class Car {
+exports.Bike = void 0;
+class Bike {
     constructor(brand, model, year, speed) {
         this.brand = brand;
         this.model = model;
@@ -10,13 +9,13 @@ class Car {
         this.speed = speed;
     }
     start() {
-        console.log(`${this.brand} car started at speed ${this.speed} km/h.`);
+        console.log(`${this.brand} bike started at speed ${this.speed} km/h.`);
     }
     stop() {
-        console.log(`${this.brand} car stopped.`);
+        console.log(`${this.brand} bike stopped.`);
     }
     showInfo() {
         console.log(`Brand: ${this.brand}, Model: ${this.model}, Year: ${this.year}`);
     }
 }
-exports.Car = Car;
+exports.Bike = Bike;

@@ -1,7 +1,6 @@
 import { Vehicle } from "./Vehicle";
 
-//3. Create a class Car with properties brand, model, year. Write a method to show car info.
-export class Car implements Vehicle {
+export class Bike implements Vehicle {
   brand: string;
   model: string;
   year: number;
@@ -15,11 +14,11 @@ export class Car implements Vehicle {
   }
 
   start(): void {
-    console.log(`${this.brand} car started at speed ${this.speed} km/h.`);
+    console.log(`${this.brand} bike started at speed ${this.speed} km/h.`);
   }
 
   stop(): void {
-    console.log(`${this.brand} car stopped.`);
+    console.log(`${this.brand} bike stopped.`);
   }
 
   showInfo(): void {
