@@ -1,24 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
-//7. Write a class User with private property name and getter/setter.
+// 7. Write a class User with private property name and getter/setter.
 class User {
     constructor(name) {
-        this.uname = name;
+        this._name = name;
     }
     get name() {
-        return this.uname;
+        return this._name;
     }
     set name(newName) {
-        if (newName.trim().length === 0) {
-            console.log("Tên không được để trống!");
-        }
-        else {
-            this.uname = newName;
-        }
+        this._name = newName;
     }
-    displayInfo() {
-        console.log(`User name: ${this.uname}`);
+    display() {
+        console.log(`Name: ${this._name}`);
     }
 }
 exports.User = User;

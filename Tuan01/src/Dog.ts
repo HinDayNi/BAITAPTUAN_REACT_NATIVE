@@ -1,13 +1,11 @@
-import { Animal } from "./Animal";
+import { Animals } from "./Animals";
 
-export class Dog implements Animal {
-  name: string;
-
+export class Dog extends Animals {
   constructor(name: string) {
-    this.name = name;
+    super(name);
   }
 
-  sound(): void {
-    console.log(`${this.name} says: Woof`);
+  bark(): void {
+    console.log(`${this.name} says: Woof! Woof!`);
   }
 }

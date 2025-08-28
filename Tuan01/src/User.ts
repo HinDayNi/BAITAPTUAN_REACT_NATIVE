@@ -1,22 +1,20 @@
-//7. Write a class User with private property name and getter/setter.
+// 7. Write a class User with private property name and getter/setter.
 export class User {
-  constructor(private uname: string) {
-    this.uname = uname;
+  private _name: string;
+
+  constructor(name: string) {
+    this._name = name;
   }
 
   get name(): string {
-    return this.uname;
+    return this._name;
   }
 
   set name(newName: string) {
-    if (newName.trim().length === 0) {
-      console.log("Tên không được để trống!");
-    } else {
-      this.uname = newName;
-    }
+    this._name = newName;
   }
 
-  displayInfo(): void {
-    console.log(`User name: ${this.uname}`);
+  display(): void {
+    console.log(`Name: ${this._name}`);
   }
 }
