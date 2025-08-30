@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Async_Await_1 = require("./Async_Await/Async_Await");
+const Fetch__API_Simulated_IO_1 = require("./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO");
 // helloAsync().then((message) => console.log(message));
 // getNumber().then((number) => console.log(number));
 // failProsime()
@@ -78,4 +78,5 @@ const Async_Await_1 = require("./Async_Await/Async_Await");
 // runTasks();
 // run3();
 // run4();
-(0, Async_Await_1.run5)();
+// run5();
+(0, Fetch__API_Simulated_IO_1.getTodo)();
