@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Prosime_1 = require("./Promise/Prosime");
+const Async_Await_1 = require("./Async_Await/Async_Await");
 // helloAsync().then((message) => console.log(message));
 // getNumber().then((number) => console.log(number));
 // failProsime()
@@ -63,7 +63,9 @@ const Prosime_1 = require("./Promise/Prosime");
 //   .catch((err) => {
 //     console.error("Lỗi:", err);
 //   });
-(0, Prosime_1.examplePromise)(false) // đổi true để thử trường hợp thất bại
-    .then((result) => console.log("Kết quả:", result))
-    .catch((err) => console.error("Lỗi:", err))
-    .finally(() => console.log("Done"));
+// examplePromise(false) // đổi true để thử trường hợp thất bại
+//   .then((result) => console.log("Kết quả:", result))
+//   .catch((err) => console.error("Lỗi:", err))
+//   .finally(() => console.log("Done"));
+// ==== Async_Await
+(0, Async_Await_1.run)();

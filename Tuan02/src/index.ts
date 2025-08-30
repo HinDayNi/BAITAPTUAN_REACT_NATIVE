@@ -1,3 +1,4 @@
+import { run } from "./Async_Await/Async_Await";
 import {
   examplePromise,
   failProsime,
@@ -81,7 +82,10 @@ import {
 //     console.error("Lỗi:", err);
 //   });
 
-examplePromise(false) // đổi true để thử trường hợp thất bại
-  .then((result) => console.log("Kết quả:", result))
-  .catch((err) => console.error("Lỗi:", err))
-  .finally(() => console.log("Done"));
+// examplePromise(false) // đổi true để thử trường hợp thất bại
+//   .then((result) => console.log("Kết quả:", result))
+//   .catch((err) => console.error("Lỗi:", err))
+//   .finally(() => console.log("Done"));
+
+// ==== Async_Await
+run();
