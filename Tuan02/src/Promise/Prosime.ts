@@ -56,3 +56,12 @@ export function simulateTask1(name: string, time: number) {
     }, time);
   });
 }
+
+export function filterEvenNumbers(arr: any[]) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const evenNumbers = arr.filter((num) => num % 2 === 0);
+      resolve(evenNumbers);
+    }, 1000);
+  });
+}

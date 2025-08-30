@@ -1,5 +1,6 @@
 import {
   failProsime,
+  filterEvenNumbers,
   getNumber,
   getRandomNumber,
   helloAsync,
@@ -49,23 +50,32 @@ import {
 //     console.error("Lỗi:", err);
 //   });
 
-const start = Promise.resolve(2);
-start
-  .then((number) => {
-    const square = number * number;
-    console.log(square);
-    return square;
-  })
-  .then((number) => {
-    const double = number * 2;
-    console.log(double);
-    return double;
-  })
-  .then((number) => {
-    const add = number + 1;
-    console.log(add);
-    return add;
+// const start = Promise.resolve(2);
+// start
+//   .then((number) => {
+//     const square = number * number;
+//     console.log(square);
+//     return square;
+//   })
+//   .then((number) => {
+//     const double = number * 2;
+//     console.log(double);
+//     return double;
+//   })
+//   .then((number) => {
+//     const add = number + 1;
+//     console.log(add);
+//     return add;
+//   })
+//   .catch((err) => {
+//     console.log("Lỗi", err);
+//   });
+
+const numbers = [1, 2, 3, 4, 5, 6];
+filterEvenNumbers(numbers)
+  .then((evens) => {
+    console.log("Số chẵn:", evens);
   })
   .catch((err) => {
-    console.log("Lỗi", err);
+    console.error("Lỗi:", err);
   });

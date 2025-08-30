@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const Prosime_1 = require("./Promise/Prosime");
 // helloAsync().then((message) => console.log(message));
 // getNumber().then((number) => console.log(number));
 // failProsime()
@@ -34,23 +35,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //   .catch((err) => {
 //     console.error("Lỗi:", err);
 //   });
-const start = Promise.resolve(2);
-start
-    .then((number) => {
-    const square = number * number;
-    console.log(square);
-    return square;
-})
-    .then((number) => {
-    const double = number * 2;
-    console.log(double);
-    return double;
-})
-    .then((number) => {
-    const add = number + 1;
-    console.log(add);
-    return add;
+// const start = Promise.resolve(2);
+// start
+//   .then((number) => {
+//     const square = number * number;
+//     console.log(square);
+//     return square;
+//   })
+//   .then((number) => {
+//     const double = number * 2;
+//     console.log(double);
+//     return double;
+//   })
+//   .then((number) => {
+//     const add = number + 1;
+//     console.log(add);
+//     return add;
+//   })
+//   .catch((err) => {
+//     console.log("Lỗi", err);
+//   });
+const numbers = [1, 2, 3, 4, 5, 6];
+(0, Prosime_1.filterEvenNumbers)(numbers)
+    .then((evens) => {
+    console.log("Số chẵn:", evens);
 })
     .catch((err) => {
-    console.log("Lỗi", err);
+    console.error("Lỗi:", err);
 });

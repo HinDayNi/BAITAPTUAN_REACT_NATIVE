@@ -7,6 +7,7 @@ exports.getRandomNumber = getRandomNumber;
 exports.simulateTask = simulateTask;
 exports.simulateTasks = simulateTasks;
 exports.simulateTask1 = simulateTask1;
+exports.filterEvenNumbers = filterEvenNumbers;
 function helloAsync() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -58,5 +59,13 @@ function simulateTask1(name, time) {
         setTimeout(() => {
             resolve(`${name} done`);
         }, time);
+    });
+}
+function filterEvenNumbers(arr) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const evenNumbers = arr.filter((num) => num % 2 === 0);
+            resolve(evenNumbers);
+        }, 1000);
     });
 }
