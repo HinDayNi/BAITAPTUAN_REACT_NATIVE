@@ -32,3 +32,11 @@ export function getRandomNumber() {
     }
   });
 }
+
+export function simulateTask(time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("Hoàn thành nhiệm vụ");
+    }, time);
+  });
+}

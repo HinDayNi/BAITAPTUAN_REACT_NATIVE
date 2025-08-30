@@ -6,10 +6,11 @@ const Prosime_1 = require("./Promise/Prosime");
 // failProsime()
 //   .then((result) => console.log(result))
 //   .catch((err) => console.log(err.message));
-(0, Prosime_1.getRandomNumber)()
-    .then((number) => {
-    console.log("Random number:", number);
-})
-    .catch((err) => {
-    console.log("Error:", err);
-});
+// getRandomNumber()
+//   .then((number) => {
+//     console.log("Random number:", number);
+//   })
+//   .catch((err) => {
+//     console.log("Error:", err);
+//   });
+(0, Prosime_1.simulateTask)(2000).then((message) => console.log(message));

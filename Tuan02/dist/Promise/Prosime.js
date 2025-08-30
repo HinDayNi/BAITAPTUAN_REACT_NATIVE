@@ -4,6 +4,7 @@ exports.helloAsync = helloAsync;
 exports.getNumber = getNumber;
 exports.failProsime = failProsime;
 exports.getRandomNumber = getRandomNumber;
+exports.simulateTask = simulateTask;
 function helloAsync() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -34,5 +35,12 @@ function getRandomNumber() {
         else {
             reject("Số lượng quá lớn.");
         }
+    });
+}
+function simulateTask(time) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve("Hoàn thành nhiệm vụ");
+        }, time);
     });
 }
