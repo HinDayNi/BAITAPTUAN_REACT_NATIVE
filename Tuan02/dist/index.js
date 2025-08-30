@@ -68,4 +68,5 @@ const Async_Await_1 = require("./Async_Await/Async_Await");
 //   .catch((err) => console.error("Lỗi:", err))
 //   .finally(() => console.log("Done"));
 // ==== Async_Await
-(0, Async_Await_1.run)();
+// run();
+(0, Async_Await_1.runTask)();

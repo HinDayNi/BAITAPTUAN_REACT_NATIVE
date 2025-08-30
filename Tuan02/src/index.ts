@@ -1,4 +1,4 @@
-import { run } from "./Async_Await/Async_Await";
+import { run, runTask } from "./Async_Await/Async_Await";
 import {
   examplePromise,
   failProsime,
@@ -88,4 +88,6 @@ import {
 //   .finally(() => console.log("Done"));
 
 // ==== Async_Await
-run();
+// run();
+
+runTask();

@@ -10,7 +10,24 @@ export function helloAsync1() {
 export async function run() {
   try {
     const message = await helloAsync1();
-    console.log(message); // sau 2 giây in ra "Hello Async"
+    console.log(message);
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}
+
+export function simulateTask(time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("Hoàn thành nhiệm vụ");
+    }, time);
+  });
+}
+
+export async function runTask() {
+  try {
+    const result = await simulateTask(2000);
+    console.log(result);
   } catch (err) {
     console.error("Lỗi:", err);
   }
