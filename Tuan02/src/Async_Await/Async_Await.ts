@@ -133,3 +133,20 @@ export async function runTasks() {
   }
   console.log("Tất cả tasks đã hoàn thành");
 }
+
+export async function fetchUser(id: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: id,
+        name: `User ${id}`,
+        email: `user${id}@example.com`,
+      });
+    }, 1000);
+  });
+}
+
+export async function run3() {
+  const user = await fetchUser(1);
+  console.log(user);
+}

@@ -14,6 +14,8 @@ exports.runTasksSequentially = runTasksSequentially;
 exports.runTasksInParallel = runTasksInParallel;
 exports.simulateTask2 = simulateTask2;
 exports.runTasks = runTasks;
+exports.fetchUser = fetchUser;
+exports.run3 = run3;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -136,4 +138,19 @@ async function runTasks() {
         console.log(result);
     }
     console.log("Tất cả tasks đã hoàn thành");
+}
+async function fetchUser(id) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                id: id,
+                name: `User ${id}`,
+                email: `user${id}@example.com`,
+            });
+        }, 1000);
+    });
+}
+async function run3() {
+    const user = await fetchUser(1);
+    console.log(user);
 }
