@@ -81,4 +81,5 @@ const Fetch__API_Simulated_IO_1 = require("./Fetch _API_Simulated_IO/Fetch _API_
 // run5();
 // getTodo();
 // runTodosInParallel();
-(0, Fetch__API_Simulated_IO_1.getCompletedTodos)();
+// getCompletedTodos();
+(0, Fetch__API_Simulated_IO_1.postData)();

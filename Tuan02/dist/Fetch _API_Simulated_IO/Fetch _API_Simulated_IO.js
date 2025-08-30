@@ -4,6 +4,7 @@ exports.getTodo = getTodo;
 exports.runTodosSequentially = runTodosSequentially;
 exports.runTodosInParallel = runTodosInParallel;
 exports.getCompletedTodos = getCompletedTodos;
+exports.postData = postData;
 async function getTodo() {
     try {
         const response = await fetch("https://jsonplaceholder.typicode.com/todos/1");
@@ -53,6 +54,30 @@ async function getCompletedTodos() {
         const completedTodos = todos.filter((todo) => todo.completed === true);
         console.log("Todos đã hoàn thành:", completedTodos);
         return completedTodos;
+    }
+    catch (err) {
+        console.error("Lỗi:", err);
+    }
+}
+async function postData() {
+    try {
+        const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                title: "foo",
+                body: "bar",
+                userId: 1,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Kết quả POST:", data);
+        return data;
     }
     catch (err) {
         console.error("Lỗi:", err);

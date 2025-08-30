@@ -12,6 +12,7 @@ import {
 import {
   getCompletedTodos,
   getTodo,
+  postData,
   runTodosInParallel,
 } from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
 import {
@@ -128,4 +129,6 @@ import {
 
 // runTodosInParallel();
 
-getCompletedTodos();
+// getCompletedTodos();
+
+// postData();

@@ -64,3 +64,29 @@ export async function getCompletedTodos() {
     console.error("Lỗi:", err);
   }
 }
+
+export async function postData() {
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: "foo",
+        body: "bar",
+        userId: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Kết quả POST:", data);
+    return data;
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}
