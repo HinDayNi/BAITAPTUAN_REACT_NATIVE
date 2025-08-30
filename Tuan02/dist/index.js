@@ -69,4 +69,6 @@ const Async_Await_1 = require("./Async_Await/Async_Await");
 //   .finally(() => console.log("Done"));
 // ==== Async_Await
 // run();
-(0, Async_Await_1.runTask)();
+// runTask();
+(0, Async_Await_1.runTask1)(false);
+(0, Async_Await_1.runTask1)(true);

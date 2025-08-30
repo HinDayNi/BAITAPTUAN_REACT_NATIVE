@@ -32,3 +32,26 @@ export async function runTask() {
     console.error("Lỗi:", err);
   }
 }
+
+export function mayFailTask(shouldFail: any) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (shouldFail) {
+        reject("Có lỗi xảy ra!");
+      } else {
+        resolve("Thành công!");
+      }
+    }, 1000);
+  });
+}
+
+export async function runTask1(shouldFail: any) {
+  try {
+    const result = await mayFailTask(shouldFail);
+    console.log("Kết quả:", result);
+  } catch (err) {
+    console.error("Lỗi:", err);
+  } finally {
+    console.log("Done");
+  }
+}

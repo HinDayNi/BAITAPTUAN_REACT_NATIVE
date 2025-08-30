@@ -4,6 +4,8 @@ exports.helloAsync1 = helloAsync1;
 exports.run = run;
 exports.simulateTask = simulateTask;
 exports.runTask = runTask;
+exports.mayFailTask = mayFailTask;
+exports.runTask1 = runTask1;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -35,5 +37,29 @@ async function runTask() {
     }
     catch (err) {
         console.error("Lỗi:", err);
+    }
+}
+function mayFailTask(shouldFail) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            if (shouldFail) {
+                reject("Có lỗi xảy ra!");
+            }
+            else {
+                resolve("Thành công!");
+            }
+        }, 1000);
+    });
+}
+async function runTask1(shouldFail) {
+    try {
+        const result = await mayFailTask(shouldFail);
+        console.log("Kết quả:", result);
+    }
+    catch (err) {
+        console.error("Lỗi:", err);
+    }
+    finally {
+        console.log("Done");
     }
 }
