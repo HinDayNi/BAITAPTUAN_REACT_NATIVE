@@ -5,6 +5,7 @@ exports.getNumber = getNumber;
 exports.failProsime = failProsime;
 exports.getRandomNumber = getRandomNumber;
 exports.simulateTask = simulateTask;
+exports.simulateTasks = simulateTasks;
 function helloAsync() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -41,6 +42,13 @@ function simulateTask(time) {
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve("Hoàn thành nhiệm vụ");
+        }, time);
+    });
+}
+function simulateTasks(name, time) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(`${name} done`);
         }, time);
     });
 }
