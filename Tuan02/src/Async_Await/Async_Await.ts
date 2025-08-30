@@ -68,3 +68,38 @@ export async function run1() {
   const result = await multiplyByThree(5);
   console.log(result);
 }
+
+export async function task1() {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve("Task 1 done"), 1000);
+  });
+}
+
+export async function task2() {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve("Task 2 done"), 1500);
+  });
+}
+
+export async function task3() {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve("Task 3 done"), 1000);
+  });
+}
+
+export async function runTasksSequentially() {
+  try {
+    const result1 = await task1();
+    console.log(result1);
+
+    const result2 = await task2();
+    console.log(result2);
+
+    const result3 = await task3();
+    console.log(result3);
+
+    console.log("All tasks finished sequentially");
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}

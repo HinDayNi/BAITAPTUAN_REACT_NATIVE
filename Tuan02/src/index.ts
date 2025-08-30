@@ -1,4 +1,10 @@
-import { run, run1, runTask, runTask1 } from "./Async_Await/Async_Await";
+import {
+  run,
+  run1,
+  runTask,
+  runTask1,
+  runTasksSequentially,
+} from "./Async_Await/Async_Await";
 import {
   examplePromise,
   failProsime,
@@ -95,4 +101,6 @@ import {
 // runTask1(false);
 // runTask1(true);
 
-run1();
+// run1();
+
+runTasksSequentially();
