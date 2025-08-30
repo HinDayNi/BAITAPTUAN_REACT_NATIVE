@@ -9,7 +9,10 @@ import {
   runTasksInParallel,
   runTasksSequentially,
 } from "./Async_Await/Async_Await";
-import { getTodo } from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
+import {
+  getTodo,
+  runTodosInParallel,
+} from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
 import {
   examplePromise,
   failProsime,
@@ -120,4 +123,6 @@ import {
 
 // run5();
 
-getTodo();
+// getTodo();
+
+runTodosInParallel();
