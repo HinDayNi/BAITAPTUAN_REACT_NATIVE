@@ -7,6 +7,7 @@ exports.getCompletedTodos = getCompletedTodos;
 exports.postData = postData;
 exports.downloadFile = downloadFile;
 exports.runDownload = runDownload;
+exports.runWait = runWait;
 async function getTodo() {
     try {
         const response = await fetch("https://jsonplaceholder.typicode.com/todos/1");
@@ -96,4 +97,12 @@ function downloadFile(fileName) {
 async function runDownload() {
     const message = await downloadFile("example.txt");
     console.log(message);
+}
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function runWait() {
+    console.log("Bắt đầu chờ 5 giây...");
+    await wait(5000);
+    console.log("Đã chờ xong 5 giây!");
 }

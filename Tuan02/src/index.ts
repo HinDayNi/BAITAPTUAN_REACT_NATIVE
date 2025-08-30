@@ -15,6 +15,7 @@ import {
   postData,
   runDownload,
   runTodosInParallel,
+  runWait,
 } from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
 import {
   examplePromise,
@@ -134,4 +135,6 @@ import {
 
 // postData();
 
-runDownload();
+// runDownload();
+
+runWait();

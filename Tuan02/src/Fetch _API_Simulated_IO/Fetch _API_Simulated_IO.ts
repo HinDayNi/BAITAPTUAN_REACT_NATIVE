@@ -104,3 +104,13 @@ export async function runDownload() {
   const message = await downloadFile("example.txt");
   console.log(message);
 }
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function runWait() {
+  console.log("Bắt đầu chờ 5 giây...");
+  await wait(5000);
+  console.log("Đã chờ xong 5 giây!");
+}
