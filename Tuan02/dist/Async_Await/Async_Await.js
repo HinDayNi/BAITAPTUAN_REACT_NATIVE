@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.helloAsync1 = helloAsync1;
 exports.run = run;
 exports.simulateTask = simulateTask;
-exports.runTask = runTask;
 exports.mayFailTask = mayFailTask;
 exports.runTask1 = runTask1;
 exports.multiplyByThree = multiplyByThree;
@@ -13,6 +12,8 @@ exports.task2 = task2;
 exports.task3 = task3;
 exports.runTasksSequentially = runTasksSequentially;
 exports.runTasksInParallel = runTasksInParallel;
+exports.simulateTask2 = simulateTask2;
+exports.runTasks = runTasks;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -30,22 +31,21 @@ async function run() {
         console.error("Lỗi:", err);
     }
 }
-function simulateTask(time) {
+function simulateTask(p0, time) {
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve("Hoàn thành nhiệm vụ");
         }, time);
     });
 }
-async function runTask() {
-    try {
-        const result = await simulateTask(2000);
-        console.log(result);
-    }
-    catch (err) {
-        console.error("Lỗi:", err);
-    }
-}
+// export async function runTask() {
+//   try {
+//     const result = await simulateTask(2000);
+//     console.log(result);
+//   } catch (err) {
+//     console.error("Lỗi:", err);
+//   }
+// }
 function mayFailTask(shouldFail) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
@@ -118,4 +118,22 @@ async function runTasksInParallel() {
     catch (err) {
         console.error("Lỗi:", err);
     }
+}
+function simulateTask2(name, time) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(`${name} done`);
+        }, time);
+    });
+}
+const tasks = [
+    simulateTask2("Task 1", 1000),
+    simulateTask2("Task 2", 1500),
+    simulateTask2("Task 3", 500),
+];
+async function runTasks() {
+    for await (const result of tasks) {
+        console.log(result);
+    }
+    console.log("Tất cả tasks đã hoàn thành");
 }

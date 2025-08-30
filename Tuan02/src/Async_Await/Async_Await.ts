@@ -16,7 +16,7 @@ export async function run() {
   }
 }
 
-export function simulateTask(time: number) {
+export function simulateTask(p0: string, time: number) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve("Hoàn thành nhiệm vụ");
@@ -24,14 +24,14 @@ export function simulateTask(time: number) {
   });
 }
 
-export async function runTask() {
-  try {
-    const result = await simulateTask(2000);
-    console.log(result);
-  } catch (err) {
-    console.error("Lỗi:", err);
-  }
-}
+// export async function runTask() {
+//   try {
+//     const result = await simulateTask(2000);
+//     console.log(result);
+//   } catch (err) {
+//     console.error("Lỗi:", err);
+//   }
+// }
 
 export function mayFailTask(shouldFail: any) {
   return new Promise((resolve, reject) => {
@@ -111,4 +111,25 @@ export async function runTasksInParallel() {
   } catch (err) {
     console.error("Lỗi:", err);
   }
+}
+
+export function simulateTask2(name: string, time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(`${name} done`);
+    }, time);
+  });
+}
+
+const tasks = [
+  simulateTask2("Task 1", 1000),
+  simulateTask2("Task 2", 1500),
+  simulateTask2("Task 3", 500),
+];
+
+export async function runTasks() {
+  for await (const result of tasks) {
+    console.log(result);
+  }
+  console.log("Tất cả tasks đã hoàn thành");
 }

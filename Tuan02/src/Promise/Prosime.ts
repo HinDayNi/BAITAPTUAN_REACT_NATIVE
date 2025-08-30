@@ -33,7 +33,7 @@ export function getRandomNumber() {
   });
 }
 
-export function simulateTask(time: number) {
+export function simulateTask(p0: string, time: number) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve("Hoàn thành nhiệm vụ");

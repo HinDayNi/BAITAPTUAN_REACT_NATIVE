@@ -41,7 +41,7 @@ function getRandomNumber() {
         }
     });
 }
-function simulateTask(time) {
+function simulateTask(p0, time) {
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve("Hoàn thành nhiệm vụ");
