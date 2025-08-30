@@ -13,3 +13,11 @@ export function getNumber() {
     }, 1000);
   });
 }
+
+export function failProsime() {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error("Something went wrong"));
+    }, 1000);
+  });
+}
