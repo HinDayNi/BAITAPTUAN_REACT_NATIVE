@@ -17,6 +17,7 @@ import {
   queueProcess,
   run6,
   runDownload,
+  runMultipleAPIs,
   runTodosInParallel,
   runWait,
 } from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
@@ -146,4 +147,6 @@ import {
 
 // batchProcess();
 
-queueProcess();
+// queueProcess();
+
+runMultipleAPIs();

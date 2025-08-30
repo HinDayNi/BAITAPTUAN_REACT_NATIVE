@@ -178,3 +178,33 @@ export async function queueProcess() {
 
   console.log("Tất cả tasks đã được xử lý tuần tự");
 }
+
+export async function fetchTodo(id: number) {
+  try {
+    const response = await fetch(
+      `https://jsonplaceholder.typicode.com/todos/${id}`
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function runMultipleAPIs() {
+  const ids = [1, 2, 3, 9999];
+  const promises = ids.map((id) => fetchTodo(id));
+
+  const results = await Promise.allSettled(promises);
+
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      console.log(`ID ${ids[index]}: Thành công`, result.value);
+    } else {
+      console.log(`ID ${ids[index]}: Thất bại`, result.reason);
+    }
+  });
+}
