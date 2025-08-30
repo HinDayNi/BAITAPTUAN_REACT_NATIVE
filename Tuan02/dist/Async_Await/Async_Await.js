@@ -18,6 +18,8 @@ exports.fetchUser = fetchUser;
 exports.run3 = run3;
 exports.fetchUsers = fetchUsers;
 exports.run4 = run4;
+exports.fetchUser1 = fetchUser1;
+exports.run5 = run5;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -168,4 +170,30 @@ async function run4() {
     const ids = [1, 2, 3];
     const users = await fetchUsers(ids);
     console.log(users);
+}
+async function fetchUser1(id) {
+    const apiCall = new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                id,
+                name: `User ${id}`,
+                email: `user${id}@example.com`,
+            });
+        }, 1000);
+    });
+    const timeout = new Promise((_, reject) => {
+        setTimeout(() => {
+            reject(new Error("API call timed out"));
+        }, 2000);
+    });
+    return Promise.race([apiCall, timeout]);
+}
+async function run5() {
+    try {
+        const user = await fetchUser(1);
+        console.log(user);
+    }
+    catch (err) {
+        console.error("Lỗi:", err);
+    }
 }

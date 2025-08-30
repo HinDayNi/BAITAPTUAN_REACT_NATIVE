@@ -167,3 +167,32 @@ export async function run4() {
   const users = await fetchUsers(ids);
   console.log(users);
 }
+
+export async function fetchUser1(id: number) {
+  const apiCall = new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id,
+        name: `User ${id}`,
+        email: `user${id}@example.com`,
+      });
+    }, 1000);
+  });
+
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error("API call timed out"));
+    }, 2000);
+  });
+
+  return Promise.race([apiCall, timeout]);
+}
+
+export async function run5() {
+  try {
+    const user = await fetchUser(1);
+    console.log(user);
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}

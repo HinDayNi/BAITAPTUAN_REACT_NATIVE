@@ -3,6 +3,7 @@ import {
   run1,
   run3,
   run4,
+  run5,
   runTask1,
   runTasks,
   runTasksInParallel,
@@ -114,4 +115,6 @@ import {
 
 // run3();
 
-run4();
+// run4();
+
+run5();
