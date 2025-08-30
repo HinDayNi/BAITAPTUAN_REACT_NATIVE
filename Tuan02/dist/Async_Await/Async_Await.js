@@ -12,6 +12,7 @@ exports.task1 = task1;
 exports.task2 = task2;
 exports.task3 = task3;
 exports.runTasksSequentially = runTasksSequentially;
+exports.runTasksInParallel = runTasksInParallel;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -104,6 +105,15 @@ async function runTasksSequentially() {
         const result3 = await task3();
         console.log(result3);
         console.log("All tasks finished sequentially");
+    }
+    catch (err) {
+        console.error("Lỗi:", err);
+    }
+}
+async function runTasksInParallel() {
+    try {
+        const results = await Promise.all([task1(), task2(), task3()]);
+        console.log("Kết quả tất cả tasks:", results);
     }
     catch (err) {
         console.error("Lỗi:", err);

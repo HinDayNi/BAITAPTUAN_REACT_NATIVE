@@ -103,3 +103,12 @@ export async function runTasksSequentially() {
     console.error("Lỗi:", err);
   }
 }
+
+export async function runTasksInParallel() {
+  try {
+    const results = await Promise.all([task1(), task2(), task3()]);
+    console.log("Kết quả tất cả tasks:", results);
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}

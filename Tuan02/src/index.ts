@@ -3,6 +3,7 @@ import {
   run1,
   runTask,
   runTask1,
+  runTasksInParallel,
   runTasksSequentially,
 } from "./Async_Await/Async_Await";
 import {
@@ -103,4 +104,6 @@ import {
 
 // run1();
 
-runTasksSequentially();
+// runTasksSequentially();
+
+runTasksInParallel();
