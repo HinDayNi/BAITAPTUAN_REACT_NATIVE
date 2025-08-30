@@ -44,3 +44,23 @@ export async function runTodosInParallel() {
   const todos = await Promise.all(promises);
   console.log(todos);
 }
+
+export async function getCompletedTodos() {
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/todos");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const todos = await response.json();
+
+    const completedTodos = todos.filter(
+      (todo: { completed: boolean }) => todo.completed === true
+    );
+
+    console.log("Todos đã hoàn thành:", completedTodos);
+    return completedTodos;
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}

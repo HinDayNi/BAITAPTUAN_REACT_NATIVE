@@ -10,6 +10,7 @@ import {
   runTasksSequentially,
 } from "./Async_Await/Async_Await";
 import {
+  getCompletedTodos,
   getTodo,
   runTodosInParallel,
 } from "./Fetch _API_Simulated_IO/Fetch _API_Simulated_IO";
@@ -125,4 +126,6 @@ import {
 
 // getTodo();
 
-runTodosInParallel();
+// runTodosInParallel();
+
+getCompletedTodos();
