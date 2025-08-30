@@ -13,6 +13,7 @@ import {
   getCompletedTodos,
   getTodo,
   postData,
+  run6,
   runDownload,
   runTodosInParallel,
   runWait,
@@ -137,4 +138,6 @@ import {
 
 // runDownload();
 
-runWait();
+// runWait();
+
+run6();

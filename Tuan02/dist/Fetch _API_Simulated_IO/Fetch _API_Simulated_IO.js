@@ -8,6 +8,8 @@ exports.postData = postData;
 exports.downloadFile = downloadFile;
 exports.runDownload = runDownload;
 exports.runWait = runWait;
+exports.fetchWithRetry = fetchWithRetry;
+exports.run6 = run6;
 async function getTodo() {
     try {
         const response = await fetch("https://jsonplaceholder.typicode.com/todos/1");
@@ -105,4 +107,31 @@ async function runWait() {
     console.log("Bắt đầu chờ 5 giây...");
     await wait(5000);
     console.log("Đã chờ xong 5 giây!");
+}
+async function fetchWithRetry(url, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (err) {
+            console.warn(`Lần thử ${attempt} thất bại:`, err);
+            if (attempt === retries) {
+                throw new Error(`Không thể fetch sau ${retries} lần thử`);
+            }
+        }
+    }
+}
+async function run6() {
+    try {
+        const data = await fetchWithRetry("https://jsonplaceholder.typicode.com/todos/1", 3);
+        console.log("Dữ liệu nhận được:", data);
+    }
+    catch (err) {
+        console.error("Lỗi cuối cùng:", err);
+    }
 }

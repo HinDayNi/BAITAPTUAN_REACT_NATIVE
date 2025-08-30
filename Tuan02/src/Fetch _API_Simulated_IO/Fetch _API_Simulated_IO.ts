@@ -114,3 +114,33 @@ export async function runWait() {
   await wait(5000);
   console.log("Đã chờ xong 5 giây!");
 }
+
+export async function fetchWithRetry(url: string, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.warn(`Lần thử ${attempt} thất bại:`, err);
+      if (attempt === retries) {
+        throw new Error(`Không thể fetch sau ${retries} lần thử`);
+      }
+    }
+  }
+}
+
+export async function run6() {
+  try {
+    const data = await fetchWithRetry(
+      "https://jsonplaceholder.typicode.com/todos/1",
+      3
+    );
+    console.log("Dữ liệu nhận được:", data);
+  } catch (err) {
+    console.error("Lỗi cuối cùng:", err);
+  }
+}
