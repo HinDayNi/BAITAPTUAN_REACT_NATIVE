@@ -2,6 +2,7 @@ import {
   run,
   run1,
   run3,
+  run4,
   runTask1,
   runTasks,
   runTasksInParallel,
@@ -111,4 +112,6 @@ import {
 
 // runTasks();
 
-run3();
+// run3();
+
+run4();

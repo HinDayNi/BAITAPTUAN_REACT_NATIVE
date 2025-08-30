@@ -16,6 +16,8 @@ exports.simulateTask2 = simulateTask2;
 exports.runTasks = runTasks;
 exports.fetchUser = fetchUser;
 exports.run3 = run3;
+exports.fetchUsers = fetchUsers;
+exports.run4 = run4;
 function helloAsync1() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -153,4 +155,17 @@ async function fetchUser(id) {
 async function run3() {
     const user = await fetchUser(1);
     console.log(user);
+}
+async function fetchUsers(ids) {
+    const users = [];
+    for (const id of ids) {
+        const user = await fetchUser(id);
+        users.push(user);
+    }
+    return users;
+}
+async function run4() {
+    const ids = [1, 2, 3];
+    const users = await fetchUsers(ids);
+    console.log(users);
 }

@@ -150,3 +150,20 @@ export async function run3() {
   const user = await fetchUser(1);
   console.log(user);
 }
+
+export async function fetchUsers(ids: number[]) {
+  const users = [];
+
+  for (const id of ids) {
+    const user = await fetchUser(id);
+    users.push(user);
+  }
+
+  return users;
+}
+
+export async function run4() {
+  const ids = [1, 2, 3];
+  const users = await fetchUsers(ids);
+  console.log(users);
+}

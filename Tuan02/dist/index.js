@@ -76,4 +76,5 @@ const Async_Await_1 = require("./Async_Await/Async_Await");
 // runTasksSequentially();
 // runTasksInParallel();
 // runTasks();
-(0, Async_Await_1.run3)();
+// run3();
+(0, Async_Await_1.run4)();
