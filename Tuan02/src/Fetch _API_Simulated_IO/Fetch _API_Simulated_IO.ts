@@ -90,3 +90,17 @@ export async function postData() {
     console.error("Lỗi:", err);
   }
 }
+
+export function downloadFile(fileName: string) {
+  return new Promise((resolve) => {
+    console.log(`⏳ Bắt đầu tải file: ${fileName}`);
+    setTimeout(() => {
+      resolve(`File ${fileName} đã tải xong`);
+    }, 3000);
+  });
+}
+
+export async function runDownload() {
+  const message = await downloadFile("example.txt");
+  console.log(message);
+}

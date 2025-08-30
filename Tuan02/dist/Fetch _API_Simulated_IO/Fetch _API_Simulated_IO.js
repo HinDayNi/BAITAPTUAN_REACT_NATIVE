@@ -5,6 +5,8 @@ exports.runTodosSequentially = runTodosSequentially;
 exports.runTodosInParallel = runTodosInParallel;
 exports.getCompletedTodos = getCompletedTodos;
 exports.postData = postData;
+exports.downloadFile = downloadFile;
+exports.runDownload = runDownload;
 async function getTodo() {
     try {
         const response = await fetch("https://jsonplaceholder.typicode.com/todos/1");
@@ -82,4 +84,16 @@ async function postData() {
     catch (err) {
         console.error("Lỗi:", err);
     }
+}
+function downloadFile(fileName) {
+    return new Promise((resolve) => {
+        console.log(`⏳ Bắt đầu tải file: ${fileName}`);
+        setTimeout(() => {
+            resolve(`File ${fileName} đã tải xong`);
+        }, 3000);
+    });
+}
+async function runDownload() {
+    const message = await downloadFile("example.txt");
+    console.log(message);
 }
