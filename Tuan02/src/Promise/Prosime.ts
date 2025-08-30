@@ -21,3 +21,14 @@ export function failProsime() {
     }, 1000);
   });
 }
+
+export function getRandomNumber() {
+  return new Promise((resolve, reject) => {
+    const number = Math.random();
+    if (number < 0.9) {
+      resolve(number);
+    } else {
+      reject("Số lượng quá lớn.");
+    }
+  });
+}

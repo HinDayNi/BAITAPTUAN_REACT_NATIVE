@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.helloAsync = helloAsync;
 exports.getNumber = getNumber;
 exports.failProsime = failProsime;
+exports.getRandomNumber = getRandomNumber;
 function helloAsync() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -22,5 +23,16 @@ function failProsime() {
         setTimeout(() => {
             reject(new Error("Something went wrong"));
         }, 1000);
+    });
+}
+function getRandomNumber() {
+    return new Promise((resolve, reject) => {
+        const number = Math.random();
+        if (number < 0.9) {
+            resolve(number);
+        }
+        else {
+            reject("Số lượng quá lớn.");
+        }
     });
 }
