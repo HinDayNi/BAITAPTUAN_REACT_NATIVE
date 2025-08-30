@@ -55,3 +55,16 @@ export async function runTask1(shouldFail: any) {
     console.log("Done");
   }
 }
+
+export async function multiplyByThree(num: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(num * 3);
+    }, 1000);
+  });
+}
+
+export async function run1() {
+  const result = await multiplyByThree(5);
+  console.log(result);
+}
