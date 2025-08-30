@@ -163,3 +163,18 @@ export async function batchProcess() {
     console.error("Lỗi:", err);
   }
 }
+
+export async function queueProcess() {
+  const taskIds = [1, 2, 3, 4, 5];
+
+  for (const id of taskIds) {
+    try {
+      const result = await asyncTask(id);
+      console.log(result);
+    } catch (err) {
+      console.error(`Lỗi ở Task ${id}:`, err);
+    }
+  }
+
+  console.log("Tất cả tasks đã được xử lý tuần tự");
+}

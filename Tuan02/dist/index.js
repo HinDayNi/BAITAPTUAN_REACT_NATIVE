@@ -86,4 +86,5 @@ const Fetch__API_Simulated_IO_1 = require("./Fetch _API_Simulated_IO/Fetch _API_
 // runDownload();
 // runWait();
 // run6();
-(0, Fetch__API_Simulated_IO_1.batchProcess)();
+// batchProcess();
+(0, Fetch__API_Simulated_IO_1.queueProcess)();

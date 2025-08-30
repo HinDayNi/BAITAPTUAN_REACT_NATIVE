@@ -14,6 +14,7 @@ import {
   getCompletedTodos,
   getTodo,
   postData,
+  queueProcess,
   run6,
   runDownload,
   runTodosInParallel,
@@ -144,3 +145,5 @@ import {
 // run6();
 
 // batchProcess();
+
+queueProcess();
