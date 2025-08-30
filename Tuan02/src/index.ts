@@ -37,14 +37,35 @@ import {
 //     console.error("Lỗi:", err);
 //   });
 
-const task1 = simulateTask1("Task 1", 3000);
-const task2 = simulateTask1("Task 2", 1000);
-const task3 = simulateTask1("Task 3", 2000);
-// Sử dụng Promise.race
-Promise.race([task1, task2, task3])
-  .then((firstResult) => {
-    console.log("Kết quả đầu tiên:", firstResult);
+// const task1 = simulateTask1("Task 1", 3000);
+// const task2 = simulateTask1("Task 2", 1000);
+// const task3 = simulateTask1("Task 3", 2000);
+// // Sử dụng Promise.race
+// Promise.race([task1, task2, task3])
+//   .then((firstResult) => {
+//     console.log("Kết quả đầu tiên:", firstResult);
+//   })
+//   .catch((err) => {
+//     console.error("Lỗi:", err);
+//   });
+
+const start = Promise.resolve(2);
+start
+  .then((number) => {
+    const square = number * number;
+    console.log(square);
+    return square;
+  })
+  .then((number) => {
+    const double = number * 2;
+    console.log(double);
+    return double;
+  })
+  .then((number) => {
+    const add = number + 1;
+    console.log(add);
+    return add;
   })
   .catch((err) => {
-    console.error("Lỗi:", err);
+    console.log("Lỗi", err);
   });
