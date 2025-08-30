@@ -1,4 +1,5 @@
 import {
+  examplePromise,
   failProsime,
   filterEvenNumbers,
   getNumber,
@@ -71,11 +72,16 @@ import {
 //     console.log("Lỗi", err);
 //   });
 
-const numbers = [1, 2, 3, 4, 5, 6];
-filterEvenNumbers(numbers)
-  .then((evens) => {
-    console.log("Số chẵn:", evens);
-  })
-  .catch((err) => {
-    console.error("Lỗi:", err);
-  });
+// const numbers = [1, 2, 3, 4, 5, 6];
+// filterEvenNumbers(numbers)
+//   .then((evens) => {
+//     console.log("Số chẵn:", evens);
+//   })
+//   .catch((err) => {
+//     console.error("Lỗi:", err);
+//   });
+
+examplePromise(false) // đổi true để thử trường hợp thất bại
+  .then((result) => console.log("Kết quả:", result))
+  .catch((err) => console.error("Lỗi:", err))
+  .finally(() => console.log("Done"));

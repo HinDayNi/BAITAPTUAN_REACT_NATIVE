@@ -65,3 +65,15 @@ export function filterEvenNumbers(arr: any[]) {
     }, 1000);
   });
 }
+
+export function examplePromise(shouldFail: any) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (shouldFail) {
+        reject("Có lỗi xảy ra!");
+      } else {
+        resolve("Thành công!");
+      }
+    }, 1000);
+  });
+}

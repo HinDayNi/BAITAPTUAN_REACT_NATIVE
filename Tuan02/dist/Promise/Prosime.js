@@ -8,6 +8,7 @@ exports.simulateTask = simulateTask;
 exports.simulateTasks = simulateTasks;
 exports.simulateTask1 = simulateTask1;
 exports.filterEvenNumbers = filterEvenNumbers;
+exports.examplePromise = examplePromise;
 function helloAsync() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -66,6 +67,18 @@ function filterEvenNumbers(arr) {
         setTimeout(() => {
             const evenNumbers = arr.filter((num) => num % 2 === 0);
             resolve(evenNumbers);
+        }, 1000);
+    });
+}
+function examplePromise(shouldFail) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            if (shouldFail) {
+                reject("Có lỗi xảy ra!");
+            }
+            else {
+                resolve("Thành công!");
+            }
         }, 1000);
     });
 }

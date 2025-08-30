@@ -55,11 +55,15 @@ const Prosime_1 = require("./Promise/Prosime");
 //   .catch((err) => {
 //     console.log("Lỗi", err);
 //   });
-const numbers = [1, 2, 3, 4, 5, 6];
-(0, Prosime_1.filterEvenNumbers)(numbers)
-    .then((evens) => {
-    console.log("Số chẵn:", evens);
-})
-    .catch((err) => {
-    console.error("Lỗi:", err);
-});
+// const numbers = [1, 2, 3, 4, 5, 6];
+// filterEvenNumbers(numbers)
+//   .then((evens) => {
+//     console.log("Số chẵn:", evens);
+//   })
+//   .catch((err) => {
+//     console.error("Lỗi:", err);
+//   });
+(0, Prosime_1.examplePromise)(false) // đổi true để thử trường hợp thất bại
+    .then((result) => console.log("Kết quả:", result))
+    .catch((err) => console.error("Lỗi:", err))
+    .finally(() => console.log("Done"));
