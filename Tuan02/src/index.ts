@@ -10,6 +10,7 @@ import {
   runTasksSequentially,
 } from "./Async_Await/Async_Await";
 import {
+  batchProcess,
   getCompletedTodos,
   getTodo,
   postData,
@@ -140,4 +141,6 @@ import {
 
 // runWait();
 
-run6();
+// run6();
+
+// batchProcess();

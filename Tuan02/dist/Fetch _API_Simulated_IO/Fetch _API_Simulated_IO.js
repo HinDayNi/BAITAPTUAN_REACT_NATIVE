@@ -10,6 +10,8 @@ exports.runDownload = runDownload;
 exports.runWait = runWait;
 exports.fetchWithRetry = fetchWithRetry;
 exports.run6 = run6;
+exports.asyncTask = asyncTask;
+exports.batchProcess = batchProcess;
 async function getTodo() {
     try {
         const response = await fetch("https://jsonplaceholder.typicode.com/todos/1");
@@ -133,5 +135,23 @@ async function run6() {
     }
     catch (err) {
         console.error("Lỗi cuối cùng:", err);
+    }
+}
+async function asyncTask(id) {
+    return new Promise((resolve) => {
+        const time = Math.floor(Math.random() * 2000) + 1000;
+        setTimeout(() => {
+            resolve(`Task ${id} done in ${time}ms`);
+        }, time);
+    });
+}
+async function batchProcess() {
+    const tasks = [1, 2, 3, 4, 5].map((id) => asyncTask(id));
+    try {
+        const results = await Promise.all(tasks);
+        console.log("Kết quả tất cả tasks:", results);
+    }
+    catch (err) {
+        console.error("Lỗi:", err);
     }
 }

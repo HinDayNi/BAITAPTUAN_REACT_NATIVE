@@ -144,3 +144,22 @@ export async function run6() {
     console.error("Lỗi cuối cùng:", err);
   }
 }
+
+export async function asyncTask(id: number) {
+  return new Promise((resolve) => {
+    const time = Math.floor(Math.random() * 2000) + 1000;
+    setTimeout(() => {
+      resolve(`Task ${id} done in ${time}ms`);
+    }, time);
+  });
+}
+
+export async function batchProcess() {
+  const tasks = [1, 2, 3, 4, 5].map((id) => asyncTask(id));
+  try {
+    const results = await Promise.all(tasks);
+    console.log("Kết quả tất cả tasks:", results);
+  } catch (err) {
+    console.error("Lỗi:", err);
+  }
+}
