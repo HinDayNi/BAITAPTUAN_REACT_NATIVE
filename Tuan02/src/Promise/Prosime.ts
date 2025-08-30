@@ -48,3 +48,11 @@ export function simulateTasks(name: string, time: number) {
     }, time);
   });
 }
+
+export function simulateTask1(name: string, time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(`${name} done`);
+    }, time);
+  });
+}
