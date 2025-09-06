@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -18,12 +19,15 @@ export default function OTPVerification() {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#E0F7FA", "#00ACC1"]}
+      style={styles.container}
+      locations={[0.85, 1]}
+    >
       <Text style={styles.title}>CODE</Text>
       <Text style={styles.subtitle}>VERIFICATION</Text>
       <Text style={styles.info}>
-        Enter one-time password sent to {"\n"}
-        +849092605798
+        Enter one-time password sent to {"\n"} +849092605798
       </Text>
 
       {/* OTP Input */}
@@ -46,7 +50,7 @@ export default function OTPVerification() {
           <Text style={styles.buttonText}>VERIFY CODE</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -55,7 +59,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#E0F7FA",
     padding: 50,
   },
   title: {
@@ -97,8 +100,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFD600",
     width: 320,
     height: 60,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+    justifyContent: "center",
+    borderRadius: 8,
   },
   buttonText: {
     textAlign: "center",
