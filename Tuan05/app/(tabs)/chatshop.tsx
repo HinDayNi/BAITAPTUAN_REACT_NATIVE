@@ -7,7 +7,10 @@ import {
   FlatList,
 } from "react-native";
 import React, { useState } from "react";
+import Feather from "@expo/vector-icons/Feather";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Link } from "expo-router";
 
 export default function ChatShop() {
   type ItemData = {
@@ -79,11 +82,29 @@ export default function ChatShop() {
   );
   return (
     <SafeAreaProvider>
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Link href="/(tabs)" asChild>
+            <TouchableOpacity style={styles.backButton}>
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+          </Link>
+          <Text style={styles.headerTitle}>Chat</Text>
+          <TouchableOpacity style={styles.cartButton}>
+            <Feather
+              name="shopping-cart"
+              size={24}
+              color="black"
+              style={styles.cartButtonText}
+            />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.container}>
           <View style={styles.conTitle}>
             <Text style={styles.title}>
-              Bạn có thắc mắc với sản phẩm vừa xem đừng ngại chát với shop!
+              Bạn có thắc mắc với sản phẩm vừa xem. Đừng ngại chát với shop!
             </Text>
           </View>
           <FlatList
@@ -91,62 +112,143 @@ export default function ChatShop() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <Item item={item} />}
             scrollEnabled
-            showsVerticalScrollIndicator={true}
+            showsVerticalScrollIndicator={false}
           />
         </View>
-      </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.footerButton}>
+            <Feather name="menu" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerButton}>
+            <Feather name="home" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerButton}>
+            <AntDesign name="rollback" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: "#E5E5E5",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#1BA9FF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    height: 56,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backButtonText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  cartButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cartButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  conTitle: {},
+  conTitle: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 4,
+  },
   title: {
-    fontSize: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    fontSize: 14,
+    color: "#000000",
+    lineHeight: 20,
   },
   item: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    padding: 16,
+    marginBottom: 8,
+    borderRadius: 4,
   },
   f1: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 12,
   },
   image: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain",
+    width: 74,
+    height: 74,
+    resizeMode: "cover",
+    borderRadius: 4,
   },
-  itemContent: {},
-  itemTitle: {},
-  itemShop: {},
+  itemContent: {
+    marginBottom: 8,
+  },
+  itemTitle: {
+    fontSize: 16,
+    color: "#000000",
+    fontWeight: "500",
+  },
+  itemShop: {
+    fontSize: 14,
+    color: "#E53935",
+  },
   chatButton: {
     backgroundColor: "#F31111",
     width: 88,
     height: 38,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
   chatButtonText: {
     color: "#FFFFFF",
-    textAlign: "center",
-    lineHeight: 35,
+    fontSize: 14,
     fontWeight: "bold",
   },
   shopchat: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "#1BA9FF",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    height: 60,
+  },
+  footerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
     alignItems: "center",
   },
 });
