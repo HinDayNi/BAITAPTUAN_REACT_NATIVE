@@ -10,9 +10,19 @@ import React, { useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 export default function ChatShop() {
+  const router = useRouter();
+
+  const goToHome = () => {
+    router.push("/(tabs)");
+  };
+
+  const goToShop = () => {
+    router.push("/(tabs)/shop");
+  };
+
   type ItemData = {
     id: string;
     title: string;
@@ -85,11 +95,9 @@ export default function ChatShop() {
       <SafeAreaView style={styles.screen}>
         {/* Header */}
         <View style={styles.header}>
-          <Link href="/(tabs)" asChild>
-            <TouchableOpacity style={styles.backButton}>
-              <Text style={styles.backButtonText}>←</Text>
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity style={styles.backButton} onPress={goToShop}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>
           <TouchableOpacity style={styles.cartButton}>
             <Feather

@@ -1,10 +1,17 @@
-import { View, Text, StyleSheet } from "react-native";
-import ChatShop from "./chatshop";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Link } from "expo-router";
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <ChatShop />
+      <Text style={styles.title}>Welcome to Home Screen</Text>
+
+      {/* Button chuyển sang Shop */}
+      <Link href="/(tabs)/shop" asChild>
+        <TouchableOpacity style={styles.shopButton}>
+          <Text style={styles.shopButtonText}>Đi tới Shop</Text>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }
@@ -16,9 +23,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
   },
-  text: {
+  title: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+  },
+  shopButton: {
+    backgroundColor: "#1BA9FF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  shopButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
