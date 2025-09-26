@@ -12,6 +12,8 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 
+//Bài 2: Dùng Flatlist
+
 interface Product {
   id: string;
   name: string;

@@ -12,6 +12,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 
+//Bài 1: Dùng Flatlist
+
 export default function ChatShop() {
   const router = useRouter();
 
