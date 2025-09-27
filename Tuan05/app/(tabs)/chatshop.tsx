@@ -97,7 +97,7 @@ export default function ChatShop() {
       <SafeAreaView style={styles.screen}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={goToShop}>
+          <TouchableOpacity style={styles.backButton} onPress={goToHome}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>
