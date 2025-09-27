@@ -24,6 +24,10 @@ export default function Home() {
     router.push("/(tabs)/bai4");
   };
 
+  const goToGallery = () => {
+    router.push("/(tabs)/gallery");
+  };
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -79,6 +83,19 @@ export default function Home() {
                 <Text style={styles.menuTitle}>Bài 4: Horizontal List</Text>
                 <Text style={styles.menuDescription}>
                   Danh sách User cuộn ngang
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+          {/* Bài 5: Gallery App */}
+          <TouchableOpacity style={styles.menuItem} onPress={goToGallery}>
+            <View style={styles.menuItemContent}>
+              <Feather name="image" size={30} color="#FF6B35" />
+              <View style={styles.menuText}>
+                <Text style={styles.menuTitle}>Bài 5: Gallery App</Text>
+                <Text style={styles.menuDescription}>
+                  ListView, GridView & Horizontal
                 </Text>
               </View>
               <Feather name="chevron-right" size={20} color="#666" />

@@ -8,6 +8,7 @@ export default function TabLayout() {
       <Stack.Screen name="shop" options={{ headerShown: false }} />
       <Stack.Screen name="bai3" options={{ headerShown: false }} />
       <Stack.Screen name="bai4" options={{ headerShown: false }} />
+      <Stack.Screen name="gallery" options={{ headerShown: false }} />
       <Stack.Screen name="explore" options={{ headerShown: false }} />
     </Stack>
   );
