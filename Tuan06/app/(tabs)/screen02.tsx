@@ -2,11 +2,13 @@ import { View, Image, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
+declare function require(path: string): any;
+
 const phoneImages = {
-  "#C5F1FB": require("../../assets/images/vs_silver.png"),
-  "#F30D0D": require("../../assets/images/vs_red.png"),
-  "#000000": require("../../assets/images/vs_black.png"),
-  "#234896": require("../../assets/images/vs_blue.png"),
+  "#C5F1FB": require("../../assets/images/vs_silver (1).png"),
+  "#F30D0D": require("../../assets/images/vs_red (1).png"),
+  "#000000": require("../../assets/images/vs_black (1).png"),
+  "#234896": require("../../assets/images/vs_blue (1).png"),
 };
 
 export default function Screen02() {
@@ -27,7 +29,7 @@ export default function Screen02() {
   const handleDone = () => {
     const selectedColorObj = colors.find((c) => c.color === selectedColor);
     router.push({
-      pathname: "/",
+      pathname: "/screen01",
       params: {
         color: selectedColor,
         colorName: selectedColorObj?.name || "Xanh",
@@ -89,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   topSection: {
-    flex: 1,
+    height: 180,
     backgroundColor: "#fff",
     flexDirection: "row",
     paddingHorizontal: 20,
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#C4C4C4",
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 20,
   },
   chooseColorText: {
     fontSize: 18,
@@ -151,7 +153,8 @@ const styles = StyleSheet.create({
   },
   colorContainer: {
     alignItems: "center",
-    marginBottom: 30,
+    flex: 1,
+    justifyContent: "center",
   },
   colorBox: {
     width: 80,
@@ -177,6 +180,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginHorizontal: 20,
+    marginBottom: 20,
   },
   doneButtonText: {
     color: "#fff",
