@@ -1,40 +1,98 @@
-import { View, Image, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { AntDesign, MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { phoneApi, Phone, PhoneColor } from "../../services/phoneApi";
 
 const phoneImages = {
   "#C5F1FB": require("../../assets/images/vs_silver (1).png"),
-  "#F30D0D": require("../../assets/images/vs_red.png"),
-  "#000000": require("../../assets/images/vs_black.png"),
-  "#234896": require("../../assets/images/vs_blue.png"),
+  "#F30D0D": require("../../assets/images/vs_red (1).png"),
+  "#000000": require("../../assets/images/vs_black (1).png"),
+  "#234896": require("../../assets/images/vs_blue (1).png"),
 };
 
 export default function Screen01() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const [selectedColor, setSelectedColor] = useState(
-    (params.color as string) || "#234896"
-  );
-  const [selectedColorName, setSelectedColorName] = useState(
-    (params.colorName as string) || "Xanh"
-  );
+  const [phone, setPhone] = useState<Phone | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedColor, setSelectedColor] = useState("#234896");
+  const [selectedColorName, setSelectedColorName] = useState("Xanh");
+
+  // Helper function - move before useEffect
+  const formatPrice = (price: string) => {
+    return new Intl.NumberFormat("vi-VN").format(parseInt(price)) + " đ";
+  };
+
+  // Load dữ liệu từ API
+  useEffect(() => {
+    loadPhoneData();
+  }, []);
+
+  // Update color when returning from screen02
+  useEffect(() => {
+    if (params.color) {
+      setSelectedColor(params.color as string);
+      setSelectedColorName(params.colorName as string);
+    }
+  }, [params.color, params.colorName]);
+
+  const loadPhoneData = async () => {
+    try {
+      setLoading(true);
+      const phoneData = await phoneApi.getPhone("1");
+      setPhone(phoneData);
+      console.log("Phone data loaded:", phoneData);
+    } catch (error) {
+      Alert.alert(
+        "Lỗi",
+        "Không thể tải dữ liệu sản phẩm. Sử dụng dữ liệu mặc định."
+      );
+      console.error("Failed to load phone data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const navigateToColorSelect = () => {
     router.push({
       pathname: "/screen02",
       params: {
         selectedColor: selectedColor,
+        phoneData: phone ? JSON.stringify(phone) : "",
       },
     });
   };
 
-  // Update color when returning from screen02
-  if (params.color && params.color !== selectedColor) {
-    setSelectedColor(params.color as string);
-    setSelectedColorName(params.colorName as string);
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text style={styles.loadingText}>Đang tải...</Text>
+      </View>
+    );
   }
+
+  // Sử dụng dữ liệu từ API nếu có, nếu không thì dùng dữ liệu mặc định
+  const displayName =
+    phone?.name || "Điện Thoại Vsmart Joy 3 - Hàng chính hãng";
+  const displayPrice = phone?.price ? formatPrice(phone.price) : "1.790.000 đ";
+  const displayOriginalPrice = phone?.originalPrice
+    ? formatPrice(phone.originalPrice)
+    : "1.790.000 đ";
+  const displayReviewCount = phone?.reviewCount || 828;
+  const displayRating = phone?.rating || 5;
+  const displayDiscount = phone?.discount || "Ở ĐÂU RẺ HƠN HOÀN TIỀN";
+  const displayColorsCount = phone?.colors?.length || 4;
 
   return (
     <View style={styles.container}>
@@ -45,28 +103,26 @@ export default function Screen01() {
         />
       </View>
 
-      <Text style={styles.productTitle}>
-        Điện Thoại Vsmart Joy 3 - Hàng chính hãng
-      </Text>
+      <Text style={styles.productTitle}>{displayName}</Text>
 
       <View style={styles.ratingContainer}>
         <View style={styles.stars}>
-          <AntDesign name="star" size={18} color="#FFD700" />
-          <AntDesign name="star" size={18} color="#FFD700" />
-          <AntDesign name="star" size={18} color="#FFD700" />
-          <AntDesign name="star" size={18} color="#FFD700" />
-          <AntDesign name="star" size={18} color="#FFD700" />
+          {[...Array(displayRating)].map((_, index) => (
+            <AntDesign key={index} name="star" size={18} color="#FFD700" />
+          ))}
         </View>
-        <Text style={styles.reviewText}>(Xem 828 đánh giá)</Text>
+        <Text style={styles.reviewText}>
+          (Xem {displayReviewCount} đánh giá)
+        </Text>
       </View>
 
       <View style={styles.priceContainer}>
-        <Text style={styles.currentPrice}>1.790.000 đ</Text>
-        <Text style={styles.originalPrice}>1.790.000 đ</Text>
+        <Text style={styles.currentPrice}>{displayPrice}</Text>
+        <Text style={styles.originalPrice}>{displayOriginalPrice}</Text>
       </View>
 
       <View style={styles.discountContainer}>
-        <Text style={styles.discountText}>Ở ĐÂU RẺ HƠN HOÀN TIỀN</Text>
+        <Text style={styles.discountText}>{displayDiscount}</Text>
         <MaterialIcons name="help-outline" size={16} color="#000" />
       </View>
 
@@ -74,9 +130,11 @@ export default function Screen01() {
         style={styles.colorButton}
         onPress={navigateToColorSelect}
       >
-        <Text style={styles.colorButtonText}>4 MÀU-CHỌN MÀU</Text>
+        <Text style={styles.colorButtonText}>
+          {displayColorsCount} MÀU-CHỌN MÀU
+        </Text>
         <View style={styles.colorInfo}>
-          <Text style={styles.selectedColorText}>Màu: {selectedColorName}</Text>
+          <Text style={styles.selectedColorText}></Text>
           <Ionicons name="chevron-forward" size={18} color="#000" />
         </View>
       </TouchableOpacity>
@@ -94,6 +152,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 20,
     alignItems: "center",
+  },
+  centered: {
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
   },
   imageContainer: {
     padding: 10,
