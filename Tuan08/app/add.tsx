@@ -7,12 +7,14 @@ import {
   Alert,
 } from "react-native";
 import { useState } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SQLite from "expo-sqlite";
 
 export default function AddTaskScreen() {
   const router = useRouter();
+  const { name } = useLocalSearchParams();
   const [job, setJob] = useState("");
 
   const handleAdd = async () => {
@@ -20,11 +22,19 @@ export default function AddTaskScreen() {
       Alert.alert("Lỗi", "Vui lòng nhập công việc!");
       return;
     }
-    const stored = await AsyncStorage.getItem("tasks");
-    const old = stored ? JSON.parse(stored) : [];
-    const updated = [...old, { title: job, completed: false }];
-    await AsyncStorage.setItem("tasks", JSON.stringify(updated));
-    router.back();
+
+    try {
+      const db = await SQLite.openDatabaseAsync("test.db");
+      await db.runAsync(
+        "INSERT INTO tasks (value, intValue) VALUES (?, ?)",
+        job.trim(),
+        0
+      );
+      router.back();
+    } catch (error) {
+      console.error("Error adding task:", error);
+      Alert.alert("Lỗi", "Không thể thêm công việc!");
+    }
   };
 
   return (
@@ -37,11 +47,11 @@ export default function AddTaskScreen() {
           <Ionicons name="arrow-back" size={26} color="#000" />
         </TouchableOpacity>
         <Image
-          source={{ uri: "https://i.pravatar.cc/100" }}
+          source={{ uri: "https://i.pravatar.cc/100?img=12" }}
           style={{ width: 50, height: 50, borderRadius: 25, marginLeft: 15 }}
         />
         <View style={{ marginLeft: 10 }}>
-          <Text style={{ fontSize: 18, fontWeight: "bold" }}>Hi Twinkle</Text>
+          <Text style={{ fontSize: 18, fontWeight: "bold" }}>Hi {name}</Text>
           <Text style={{ color: "gray" }}>Have a grate day ahead</Text>
         </View>
       </View>
