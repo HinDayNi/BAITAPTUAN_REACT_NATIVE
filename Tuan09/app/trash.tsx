@@ -8,11 +8,14 @@ import {
   Alert,
   TextInput,
   RefreshControl,
+  Platform, // Import Platform để xử lý SafeAreaView
+  StatusBar as RNStatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
+import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import * as DB from "../database/db";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"; // Import Expo Icons
 
 interface Transaction {
   id?: number;
@@ -24,6 +27,25 @@ interface Transaction {
   isDeleted?: number;
   deletedAt?: string;
 }
+
+const COLORS = {
+  primary: "#6495ED",
+  primaryDark: "#304674",
+  primaryLight: "#EEF3FF",
+  secondary: "#98AFC7",
+  text: "#1F2937",
+  textLight: "#6B7280",
+  background: "#F9FAFB",
+  white: "#FFFFFF",
+  income: "#10B981",
+  incomeLight: "#D1FAE5",
+  expense: "#EF4444",
+  expenseLight: "#FEE2E2",
+  border: "#E5E7EB",
+  shadowColor: "rgba(0, 0, 0, 0.1)",
+  delete: "#EF4444",
+  restore: "#10B981",
+};
 
 export default function TrashScreen() {
   const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>(
@@ -179,65 +201,91 @@ export default function TrashScreen() {
     );
   };
 
-  const renderTransactionItem = ({ item }: { item: Transaction }) => (
-    <TouchableOpacity
-      style={styles.transactionItem}
-      onLongPress={() => showRestoreMenu(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.transactionLeft}>
-        <View
-          style={[
-            styles.typeIndicator,
-            item.type === "Thu"
-              ? styles.incomeIndicator
-              : styles.expenseIndicator,
-          ]}
-        >
-          <Text style={styles.typeText}>{item.type}</Text>
-        </View>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>{item.title}</Text>
-          <Text style={styles.transactionCategory}>
-            {item.category} • {item.createdAt}
-          </Text>
-          <Text style={styles.deletedAt}>Đã xóa: {item.deletedAt}</Text>
-        </View>
-      </View>
-      <View style={styles.transactionRight}>
-        <Text
-          style={[
-            styles.transactionAmount,
-            item.type === "Thu" ? styles.incomeAmount : styles.expenseAmount,
-          ]}
-        >
-          {item.type === "Thu" ? "+" : "-"}₫{item.amount.toLocaleString()}
-        </Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.restoreButton}
-            onPress={(e) => {
-              restoreTransaction(item.id);
-            }}
+  const renderTransactionItem = ({ item }: { item: Transaction }) => {
+    const isIncome = item.type === "Thu";
+    const amountColor = isIncome ? COLORS.income : COLORS.expense;
+
+    return (
+      <TouchableOpacity
+        style={styles.transactionItem}
+        onLongPress={() => showRestoreMenu(item)}
+        activeOpacity={0.8}
+        onPress={() => showRestoreMenu(item)} // Thêm onPress để người dùng dễ dàng truy cập menu trên mobile
+      >
+        {/* Left Section: Icon, Title, Category, Deleted At */}
+        <View style={styles.transactionContent}>
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isIncome
+                  ? COLORS.incomeLight
+                  : COLORS.expenseLight,
+              },
+            ]}
           >
-            <Text style={styles.restoreButtonText}>↩️ Khôi phục</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={(e) => {
-              permanentDelete(item.id);
-            }}
-          >
-            <Text style={styles.deleteButtonText}>🗑️ Xóa</Text>
-          </TouchableOpacity>
+            <MaterialCommunityIcons
+              name={isIncome ? "arrow-up-right" : "arrow-down-left"}
+              size={24}
+              color={amountColor}
+            />
+          </View>
+
+          <View style={styles.transactionInfo}>
+            <Text style={styles.transactionTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Text style={styles.transactionCategory}>
+              <Ionicons
+                name="pricetag-outline"
+                size={12}
+                color={COLORS.textLight}
+              />{" "}
+              {item.category} • {item.createdAt}
+            </Text>
+            <Text style={styles.deletedAt}>
+              <Ionicons name="trash-outline" size={11} color={COLORS.delete} />{" "}
+              Đã xóa: {item.deletedAt}
+            </Text>
+          </View>
+
+          {/* Right Section: Amount & Actions */}
+          <View style={styles.transactionRight}>
+            <Text style={[styles.transactionAmount, { color: amountColor }]}>
+              {isIncome ? "+" : "-"}₫{item.amount.toLocaleString()}
+            </Text>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.restoreButton}
+                onPress={() => restoreTransaction(item.id)}
+              >
+                <Ionicons
+                  name="arrow-undo-outline"
+                  size={16}
+                  color={COLORS.white}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => permanentDelete(item.id)}
+              >
+                <Ionicons
+                  name="trash-bin-outline"
+                  size={16}
+                  color={COLORS.white}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+      <ExpoStatusBar style="light" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -245,42 +293,52 @@ export default function TrashScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>THÙNG RÁC</Text>
         <TouchableOpacity style={styles.emptyButton} onPress={emptyTrash}>
-          <Text style={styles.emptyButtonText}>Xóa tất cả</Text>
+          <Ionicons name="trash-bin" size={18} color={COLORS.white} />
+          <Text style={styles.emptyButtonText}> Xóa tất cả</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Transaction List */}
+      {/* List Content */}
       <View style={styles.listContainer}>
-        <View style={styles.searchHeader}>
-          <Text style={styles.sectionTitle}>
-            {deletedTransactions.length} giao dịch đã xóa
-          </Text>
-        </View>
-
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={20} color={COLORS.textLight} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm theo tên hoặc danh mục..."
-            placeholderTextColor="#999"
+            placeholder="Tìm kiếm giao dịch đã xóa..."
+            placeholderTextColor={COLORS.textLight}
             value={searchText}
             onChangeText={handleSearch}
           />
           {searchText !== "" && (
             <TouchableOpacity onPress={() => handleSearch("")}>
-              <Text style={styles.clearIcon}>✕</Text>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={COLORS.textLight}
+              />
             </TouchableOpacity>
           )}
         </View>
 
+        <View style={styles.searchHeader}>
+          <Text style={styles.sectionTitle}>
+            {deletedTransactions.length} Giao dịch (
+            {searchText ? "Kết quả tìm kiếm" : "Tất cả"})
+          </Text>
+        </View>
+
         {deletedTransactions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>{searchText ? "�" : "�🗑️"}</Text>
+            <MaterialCommunityIcons
+              name={searchText ? "magnify-remove-outline" : "trash-can-outline"}
+              size={80}
+              color={COLORS.textLight}
+            />
             <Text style={styles.emptyText}>
               {searchText ? "Không tìm thấy kết quả" : "Thùng rác trống"}
             </Text>
@@ -296,14 +354,13 @@ export default function TrashScreen() {
             renderItem={renderTransactionItem}
             keyExtractor={(item) => item.id?.toString() || "0"}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.flatListContent}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#ef4444"]}
-                tintColor="#ef4444"
-                title="Đang tải..."
-                titleColor="#666"
+                colors={[COLORS.primary]}
+                tintColor={COLORS.primary}
               />
             }
           />
@@ -316,196 +373,194 @@ export default function TrashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFBF9",
+    backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === "android" ? RNStatusBar.currentHeight || 0 : 0, // Thêm padding cho Android
   },
+
+  // Header Section
   header: {
-    backgroundColor: "#F26C6C",
-    padding: 24,
+    backgroundColor: COLORS.primary, // Blue Pastel
+    paddingHorizontal: 24,
+    paddingVertical: 18,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     elevation: 5,
     flexDirection: "row",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 1,
+    color: COLORS.white,
+    letterSpacing: 0.5,
   },
   backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: "#fff",
-    fontWeight: "bold",
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20, // Bo tròn hoàn toàn
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   emptyButton: {
-    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   emptyButtonText: {
     fontSize: 14,
-    color: "#fff",
+    color: COLORS.white,
     fontWeight: "600",
+    marginLeft: 4,
   },
+
+  // List & Search Section
   listContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  searchHeader: {
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: 25,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    shadowColor: "#000",
+    paddingVertical: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadowColor,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchIcon: {
-    fontSize: 18,
-    marginRight: 8,
+    shadowRadius: 3,
+    elevation: 1,
   },
   searchInput: {
     flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+    paddingHorizontal: 10,
+  },
+  searchHeader: {
+    marginBottom: 10,
+  },
+  sectionTitle: {
     fontSize: 16,
-    color: "#333",
-  },
-  clearIcon: {
-    fontSize: 20,
-    color: "#999",
-    paddingHorizontal: 8,
-  },
-  transactionItem: {
-    backgroundColor: "#fff",
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: "#F26C6C",
-  },
-  transactionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  typeIndicator: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  incomeIndicator: {
-    backgroundColor: "#E8F5E8",
-  },
-  expenseIndicator: {
-    backgroundColor: "#FFE8E8",
-  },
-  typeText: {
-    fontSize: 12,
     fontWeight: "700",
-    color: "#333",
+    color: COLORS.textLight,
+    marginBottom: 8,
+  },
+  flatListContent: {
+    paddingBottom: 20,
+  },
+
+  // Transaction Item
+  transactionItem: {
+    backgroundColor: COLORS.white,
+    padding: 15,
+    borderRadius: 18,
+    marginBottom: 15,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  transactionContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  iconCircle: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
   },
   transactionInfo: {
     flex: 1,
+    marginRight: 10,
   },
   transactionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
     marginBottom: 4,
   },
   transactionCategory: {
     fontSize: 12,
-    color: "#999",
-    marginBottom: 2,
+    color: COLORS.textLight,
+    marginBottom: 4,
   },
   deletedAt: {
-    fontSize: 11,
-    color: "#F26C6C",
+    fontSize: 10,
+    color: COLORS.delete,
     fontStyle: "italic",
+    fontWeight: "600",
   },
   transactionRight: {
     alignItems: "flex-end",
+    justifyContent: "center",
   },
   transactionAmount: {
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  incomeAmount: {
-    color: "#7FCF9A",
-  },
-  expenseAmount: {
-    color: "#F26C6C",
+    fontWeight: "800",
+    marginBottom: 8,
   },
   actionButtons: {
     flexDirection: "row",
     gap: 8,
   },
   restoreButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: "#7FCF9A",
-    borderRadius: 12,
-  },
-  restoreButtonText: {
-    fontSize: 12,
-    color: "#fff",
-    fontWeight: "600",
+    padding: 8,
+    backgroundColor: COLORS.income,
+    borderRadius: 10,
+    shadowColor: COLORS.income,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 1,
   },
   deleteButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: "#F26C6C",
-    borderRadius: 12,
+    padding: 8,
+    backgroundColor: COLORS.expense,
+    borderRadius: 10,
+    shadowColor: COLORS.expense,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  deleteButtonText: {
-    fontSize: 12,
-    color: "#fff",
-    fontWeight: "600",
-  },
+
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.textLight,
+    marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
+    color: COLORS.textLight,
     textAlign: "center",
+    paddingHorizontal: 40,
   },
 });
