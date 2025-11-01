@@ -120,7 +120,7 @@ export default function EditTransaction() {
 
         {/* Form chỉnh sửa */}
         <View style={styles.formCard}>
-          <Text style={styles.inputLabel}>Loại</Text>
+          <Text style={styles.inputLabel}>⚡ Loại giao dịch</Text>
           <View style={styles.typeContainer}>
             <TouchableOpacity
               style={[
@@ -135,7 +135,7 @@ export default function EditTransaction() {
                   selectedType === "Thu" && styles.typeButtonTextActive,
                 ]}
               >
-                💰 Thu
+                ↗ Thu
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -151,12 +151,12 @@ export default function EditTransaction() {
                   selectedType === "Chi" && styles.typeButtonTextActive,
                 ]}
               >
-                💸 Chi
+                ↙ Chi
               </Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.inputLabel}>Tiêu đề</Text>
+          <Text style={styles.inputLabel}>✏️ Tiêu đề</Text>
           <TextInput
             ref={titleInputRef}
             style={styles.input}
@@ -166,7 +166,7 @@ export default function EditTransaction() {
             onChangeText={setEditTitle}
           />
 
-          <Text style={styles.inputLabel}>Số tiền (₫)</Text>
+          <Text style={styles.inputLabel}>💰 Số tiền (₫)</Text>
           <TextInput
             ref={amountInputRef}
             style={styles.input}
@@ -177,7 +177,7 @@ export default function EditTransaction() {
             keyboardType="numeric"
           />
 
-          <Text style={styles.inputLabel}>Danh mục</Text>
+          <Text style={styles.inputLabel}>📂 Danh mục</Text>
           <View style={styles.categoryContainer}>
             {CATEGORIES.map((cat) => (
               <TouchableOpacity
@@ -227,19 +227,19 @@ export default function EditTransaction() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FAFBF9",
   },
   header: {
-    backgroundColor: "#6366f1",
-    padding: 20,
+    backgroundColor: "#7FCF9A",
+    padding: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 5,
   },
   backButton: {
     width: 40,
@@ -297,19 +297,26 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-    marginTop: 8,
+    color: "#5B6B6A",
+    marginBottom: 12,
+    marginTop: 16,
   },
   input: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 18,
     fontSize: 16,
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#E8F5E8",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   typeContainer: {
     flexDirection: "row",
@@ -327,12 +334,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   typeButtonIncome: {
-    backgroundColor: "#d1fae5",
-    borderColor: "#10b981",
+    backgroundColor: "#E8F5E8",
+    borderColor: "#7FCF9A",
   },
   typeButtonExpense: {
-    backgroundColor: "#fee2e2",
-    borderColor: "#ef4444",
+    backgroundColor: "#FFE8E8",
+    borderColor: "#F26C6C",
   },
   typeButtonText: {
     fontSize: 16,
@@ -359,8 +366,8 @@ const styles = StyleSheet.create({
     borderColor: "#f5f5f5",
   },
   categoryChipActive: {
-    backgroundColor: "#e0e7ff",
-    borderColor: "#6366f1",
+    backgroundColor: "#E8F5E8",
+    borderColor: "#7FCF9A",
   },
   categoryChipIcon: {
     fontSize: 18,
@@ -372,7 +379,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   categoryChipTextActive: {
-    color: "#6366f1",
+    color: "#65B57E",
     fontWeight: "600",
   },
   buttonContainer: {
@@ -395,7 +402,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   saveButton: {
-    backgroundColor: "#6366f1",
+    backgroundColor: "#65B57E",
   },
   saveButtonText: {
     fontSize: 16,

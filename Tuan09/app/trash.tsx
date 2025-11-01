@@ -316,17 +316,17 @@ export default function TrashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FAFBF9",
   },
   header: {
-    backgroundColor: "#ef4444",
-    padding: 20,
+    backgroundColor: "#F26C6C",
+    padding: 24,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 5,
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -395,16 +395,16 @@ const styles = StyleSheet.create({
   },
   transactionItem: {
     backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: "#ef4444",
+    borderLeftColor: "#F26C6C",
   },
   transactionLeft: {
     flexDirection: "row",
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   incomeIndicator: {
-    backgroundColor: "#d1fae5",
+    backgroundColor: "#E8F5E8",
   },
   expenseIndicator: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: "#FFE8E8",
   },
   typeText: {
     fontSize: 12,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   },
   deletedAt: {
     fontSize: 11,
-    color: "#ef4444",
+    color: "#F26C6C",
     fontStyle: "italic",
   },
   transactionRight: {
@@ -456,20 +456,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   incomeAmount: {
-    color: "#10b981",
+    color: "#7FCF9A",
   },
   expenseAmount: {
-    color: "#ef4444",
+    color: "#F26C6C",
   },
   actionButtons: {
     flexDirection: "row",
     gap: 8,
   },
   restoreButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#10b981",
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: "#7FCF9A",
+    borderRadius: 12,
   },
   restoreButtonText: {
     fontSize: 12,
@@ -477,10 +477,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#ef4444",
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: "#F26C6C",
+    borderRadius: 12,
   },
   deleteButtonText: {
     fontSize: 12,

@@ -388,17 +388,17 @@ export default function Statistics() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#FAFBF9",
   },
   header: {
-    backgroundColor: "#6366f1",
-    padding: 20,
+    backgroundColor: "#7FCF9A",
+    padding: 24,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 5,
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -464,10 +464,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   incomeText: {
-    color: "#10b981",
+    color: "#7FCF9A",
   },
   expenseText: {
-    color: "#ef4444",
+    color: "#F26C6C",
   },
   balanceRow: {
     flexDirection: "row",
@@ -563,10 +563,10 @@ const styles = StyleSheet.create({
     minHeight: 2,
   },
   incomeBar: {
-    backgroundColor: "#10b981",
+    backgroundColor: "#7FCF9A",
   },
   expenseBar: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#F26C6C",
   },
   monthLabel: {
     position: "absolute",
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   monthLabelActive: {
-    color: "#6366f1",
+    color: "#65B57E",
     fontWeight: "bold",
   },
   emptyChart: {
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#ef4444",
+    color: "#F26C6C",
   },
   progressBarContainer: {
     height: 8,
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#ef4444",
+    backgroundColor: "#F26C6C",
     borderRadius: 4,
   },
   categoryPercentage: {
