@@ -102,6 +102,21 @@ export default function TrashScreen() {
     ]);
   };
 
+  const showRestoreMenu = (transaction: Transaction) => {
+    Alert.alert("Tùy chọn", `Bạn muốn làm gì với "${transaction.title}"?`, [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Khôi phục",
+        onPress: () => restoreTransaction(transaction.id),
+      },
+      {
+        text: "Xóa vĩnh viễn",
+        style: "destructive",
+        onPress: () => permanentDelete(transaction.id),
+      },
+    ]);
+  };
+
   const permanentDelete = async (id?: number) => {
     if (!id) return;
 
@@ -165,7 +180,11 @@ export default function TrashScreen() {
   };
 
   const renderTransactionItem = ({ item }: { item: Transaction }) => (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity
+      style={styles.transactionItem}
+      onLongPress={() => showRestoreMenu(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.transactionLeft}>
         <View
           style={[
@@ -197,19 +216,23 @@ export default function TrashScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.restoreButton}
-            onPress={() => restoreTransaction(item.id)}
+            onPress={(e) => {
+              restoreTransaction(item.id);
+            }}
           >
             <Text style={styles.restoreButtonText}>↩️ Khôi phục</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => permanentDelete(item.id)}
+            onPress={(e) => {
+              permanentDelete(item.id);
+            }}
           >
             <Text style={styles.deleteButtonText}>🗑️ Xóa</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
