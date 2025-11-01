@@ -42,6 +42,9 @@ export default function Index() {
   const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
   const [searchText, setSearchText] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [filterType, setFilterType] = useState<"Tất cả" | "Thu" | "Chi">(
+    "Tất cả"
+  );
 
   // Sử dụng useRef để quản lý input
   const titleInputRef = useRef<TextInput>(null);
@@ -77,6 +80,14 @@ export default function Index() {
       console.error("Error loading transactions:", error);
       Alert.alert("Lỗi", "Không thể tải dữ liệu");
     }
+  };
+
+  // Lọc giao dịch theo loại
+  const getFilteredTransactions = () => {
+    if (filterType === "Tất cả") {
+      return transactions;
+    }
+    return transactions.filter((txn) => txn.type === filterType);
   };
 
   const handleSearch = async (text: string) => {
@@ -211,19 +222,22 @@ export default function Index() {
   };
 
   const getBalance = () => {
-    return transactions.reduce((sum, txn) => {
+    const filtered = getFilteredTransactions();
+    return filtered.reduce((sum, txn) => {
       return txn.type === "Thu" ? sum + txn.amount : sum - txn.amount;
     }, 0);
   };
 
   const getTotalIncome = () => {
-    return transactions
+    const filtered = getFilteredTransactions();
+    return filtered
       .filter((txn) => txn.type === "Thu")
       .reduce((sum, txn) => sum + txn.amount, 0);
   };
 
   const getTotalExpense = () => {
-    return transactions
+    const filtered = getFilteredTransactions();
+    return filtered
       .filter((txn) => txn.type === "Chi")
       .reduce((sum, txn) => sum + txn.amount, 0);
   };
@@ -327,13 +341,67 @@ export default function Index() {
             ₫{getBalance().toLocaleString()}
           </Text>
         </View>
-        <Text style={styles.summaryCount}>{transactions.length} giao dịch</Text>
+        <Text style={styles.summaryCount}>
+          {getFilteredTransactions().length} giao dịch
+        </Text>
       </View>
 
       {/* Transaction List */}
       <View style={styles.listContainer}>
         <View style={styles.searchHeader}>
           <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === "Tất cả" && styles.filterTabActive,
+            ]}
+            onPress={() => setFilterType("Tất cả")}
+          >
+            <Text
+              style={[
+                styles.filterTabText,
+                filterType === "Tất cả" && styles.filterTabTextActive,
+              ]}
+            >
+              Tất cả
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === "Thu" && styles.filterTabIncome,
+            ]}
+            onPress={() => setFilterType("Thu")}
+          >
+            <Text
+              style={[
+                styles.filterTabText,
+                filterType === "Thu" && styles.filterTabTextIncome,
+              ]}
+            >
+              💰 Thu
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === "Chi" && styles.filterTabExpense,
+            ]}
+            onPress={() => setFilterType("Chi")}
+          >
+            <Text
+              style={[
+                styles.filterTabText,
+                filterType === "Chi" && styles.filterTabTextExpense,
+              ]}
+            >
+              💸 Chi
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -630,6 +698,52 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
+  },
+  filterContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#e5e5e5",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  filterTabActive: {
+    backgroundColor: "#6366f1",
+    borderColor: "#6366f1",
+  },
+  filterTabIncome: {
+    backgroundColor: "#d1fae5",
+    borderColor: "#10b981",
+  },
+  filterTabExpense: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#ef4444",
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+  },
+  filterTabTextActive: {
+    color: "#fff",
+  },
+  filterTabTextIncome: {
+    color: "#10b981",
+  },
+  filterTabTextExpense: {
+    color: "#ef4444",
   },
   searchContainer: {
     flexDirection: "row",
