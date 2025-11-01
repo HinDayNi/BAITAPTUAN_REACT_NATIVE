@@ -8,6 +8,7 @@ import {
   FlatList,
   Modal,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -40,6 +41,7 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
   const [searchText, setSearchText] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   // Sử dụng useRef để quản lý input
   const titleInputRef = useRef<TextInput>(null);
@@ -91,6 +93,23 @@ export default function Index() {
       Alert.alert("Lỗi", "Không thể tìm kiếm");
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (searchText.trim() === "") {
+        await loadTransactions();
+      } else {
+        const results = await DB.searchTransactions(searchText.trim());
+        setTransactions(results);
+      }
+    } catch (error) {
+      console.error("Error refreshing transactions:", error);
+      Alert.alert("Lỗi", "Không thể làm mới dữ liệu");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchText]);
 
   const addTransaction = async () => {
     if (!title.trim() || !amount.trim()) {
@@ -346,6 +365,16 @@ export default function Index() {
             renderItem={renderTransactionItem}
             keyExtractor={(item) => item.id?.toString() || "0"}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#6366f1"]}
+                tintColor="#6366f1"
+                title="Đang tải..."
+                titleColor="#666"
+              />
+            }
           />
         )}
       </View>

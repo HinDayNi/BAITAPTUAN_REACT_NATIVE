@@ -7,6 +7,7 @@ import {
   FlatList,
   Alert,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -29,6 +30,7 @@ export default function TrashScreen() {
     []
   );
   const [searchText, setSearchText] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   // Load deleted transactions when screen is focused
   useFocusEffect(
@@ -61,6 +63,23 @@ export default function TrashScreen() {
       Alert.alert("Lỗi", "Không thể tìm kiếm");
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (searchText.trim() === "") {
+        await loadDeletedTransactions();
+      } else {
+        const results = await DB.searchDeletedTransactions(searchText.trim());
+        setDeletedTransactions(results);
+      }
+    } catch (error) {
+      console.error("Error refreshing deleted transactions:", error);
+      Alert.alert("Lỗi", "Không thể làm mới dữ liệu");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchText]);
 
   const restoreTransaction = async (id?: number) => {
     if (!id) return;
@@ -254,6 +273,16 @@ export default function TrashScreen() {
             renderItem={renderTransactionItem}
             keyExtractor={(item) => item.id?.toString() || "0"}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#ef4444"]}
+                tintColor="#ef4444"
+                title="Đang tải..."
+                titleColor="#666"
+              />
+            }
           />
         )}
       </View>
