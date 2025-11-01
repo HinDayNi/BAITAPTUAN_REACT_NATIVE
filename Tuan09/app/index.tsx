@@ -305,12 +305,20 @@ export default function Index() {
           <Text style={styles.settingsButtonText}>⚙️</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>QUẢN LÝ THU CHI</Text>
-        <TouchableOpacity
-          style={styles.trashButton}
-          onPress={() => router.push("/trash")}
-        >
-          <Text style={styles.trashButtonText}>🗑️</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.statsButton}
+            onPress={() => router.push("/statistics")}
+          >
+            <Text style={styles.statsButtonText}>📊</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.trashButton}
+            onPress={() => router.push("/trash")}
+          >
+            <Text style={styles.trashButtonText}>🗑️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Total Summary */}
@@ -613,9 +621,19 @@ const styles = StyleSheet.create({
   settingsButtonText: {
     fontSize: 24,
   },
-  trashButton: {
+  headerRight: {
     position: "absolute",
     right: 20,
+    flexDirection: "row",
+    gap: 8,
+  },
+  statsButton: {
+    padding: 8,
+  },
+  statsButtonText: {
+    fontSize: 24,
+  },
+  trashButton: {
     padding: 8,
   },
   trashButtonText: {
