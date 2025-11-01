@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Text,
   View,
@@ -11,9 +11,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import * as DB from "../database/db";
 
 interface Transaction {
-  id: string;
+  id?: number;
   title: string;
   amount: number;
   category: string;
@@ -31,40 +32,44 @@ const CATEGORIES = [
 ];
 
 export default function Index() {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "1",
-      title: "Lương tháng 10",
-      amount: 15000000,
-      category: "Khác",
-      createdAt: "30/10/2025, 09:00:00",
-      type: "Thu",
-    },
-    {
-      id: "2",
-      title: "Mua sắm Lotte Mart",
-      amount: 850000,
-      category: "Mua sắm",
-      createdAt: "31/10/2025, 14:30:00",
-      type: "Chi",
-    },
-    {
-      id: "3",
-      title: "Tiền điện tháng 10",
-      amount: 450000,
-      category: "Hóa đơn",
-      createdAt: "1/11/2025, 08:15:00",
-      type: "Chi",
-    },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  const addTransaction = () => {
+  // Sử dụng useRef để quản lý input
+  const titleInputRef = useRef<TextInput>(null);
+  const amountInputRef = useRef<TextInput>(null);
+
+  // Khởi tạo database và load dữ liệu
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        await DB.initDatabase();
+        await loadTransactions();
+      } catch (error) {
+        console.error("Error initializing app:", error);
+        Alert.alert("Lỗi", "Không thể khởi tạo ứng dụng");
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  const loadTransactions = async () => {
+    try {
+      const data = await DB.getAllTransactions();
+      setTransactions(data);
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+      Alert.alert("Lỗi", "Không thể tải dữ liệu");
+    }
+  };
+
+  const addTransaction = async () => {
     if (!title.trim() || !amount.trim()) {
       Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
@@ -76,36 +81,37 @@ export default function Index() {
       return;
     }
 
-    if (editingId) {
-      // Update existing transaction
-      setTransactions(
-        transactions.map((txn) =>
-          txn.id === editingId
-            ? {
-                ...txn,
-                title: title.trim(),
-                amount: numAmount,
-                category: selectedCategory,
-                type: selectedType,
-              }
-            : txn
-        )
-      );
-      setEditingId(null);
-    } else {
-      // Add new transaction
-      const newTransaction: Transaction = {
-        id: Date.now().toString(),
-        title: title.trim(),
-        amount: numAmount,
-        category: selectedCategory,
-        createdAt: new Date().toLocaleString("vi-VN"),
-        type: selectedType,
-      };
-      setTransactions([newTransaction, ...transactions]);
-    }
+    try {
+      if (editingId) {
+        // Update existing transaction
+        const updatedTransaction: Transaction = {
+          title: title.trim(),
+          amount: numAmount,
+          category: selectedCategory,
+          type: selectedType,
+          createdAt: new Date().toLocaleString("vi-VN"),
+        };
+        await DB.updateTransaction(editingId, updatedTransaction);
+        setEditingId(null);
+      } else {
+        // Add new transaction
+        const newTransaction: Transaction = {
+          title: title.trim(),
+          amount: numAmount,
+          category: selectedCategory,
+          createdAt: new Date().toLocaleString("vi-VN"),
+          type: selectedType,
+        };
+        await DB.addTransaction(newTransaction);
+      }
 
-    resetForm();
+      await loadTransactions();
+      resetForm();
+      Alert.alert("Thành công", "Giao dịch đã được lưu");
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+      Alert.alert("Lỗi", "Không thể lưu giao dịch");
+    }
   };
 
   const resetForm = () => {
@@ -114,16 +120,30 @@ export default function Index() {
     setSelectedCategory(CATEGORIES[0]);
     setSelectedType("Chi");
     setModalVisible(false);
+
+    // Clear input sử dụng useRef
+    titleInputRef.current?.clear();
+    amountInputRef.current?.clear();
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id?: number) => {
+    if (!id) return;
+
     Alert.alert("Xóa giao dịch", "Bạn có chắc chắn muốn xóa giao dịch này?", [
       { text: "Hủy", style: "cancel" },
       {
         text: "Xóa",
         style: "destructive",
-        onPress: () =>
-          setTransactions(transactions.filter((txn) => txn.id !== id)),
+        onPress: async () => {
+          try {
+            await DB.deleteTransaction(id);
+            await loadTransactions();
+            Alert.alert("Thành công", "Giao dịch đã được xóa");
+          } catch (error) {
+            console.error("Error deleting transaction:", error);
+            Alert.alert("Lỗi", "Không thể xóa giao dịch");
+          }
+        },
       },
     ]);
   };
@@ -133,7 +153,7 @@ export default function Index() {
     setAmount(transaction.amount.toString());
     setSelectedCategory(transaction.category);
     setSelectedType(transaction.type);
-    setEditingId(transaction.id);
+    setEditingId(transaction.id || null);
     setModalVisible(true);
   };
 
@@ -269,7 +289,7 @@ export default function Index() {
           <FlatList
             data={transactions}
             renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id?.toString() || "0"}
             showsVerticalScrollIndicator={false}
           />
         )}
@@ -337,6 +357,7 @@ export default function Index() {
 
             <Text style={styles.inputLabel}>Tiêu đề</Text>
             <TextInput
+              ref={titleInputRef}
               style={styles.input}
               placeholder="VD: Ăn trưa tại nhà hàng"
               placeholderTextColor="#999"
@@ -346,6 +367,7 @@ export default function Index() {
 
             <Text style={styles.inputLabel}>Số tiền (₫)</Text>
             <TextInput
+              ref={amountInputRef}
               style={styles.input}
               placeholder="0"
               placeholderTextColor="#999"
