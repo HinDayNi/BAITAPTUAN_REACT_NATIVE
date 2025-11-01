@@ -136,6 +136,54 @@ export const getDeletedTransactions = async (): Promise<Transaction[]> => {
   }
 };
 
+// Tìm kiếm giao dịch chưa xóa (bất đồng bộ)
+export const searchTransactions = async (
+  searchText: string
+): Promise<Transaction[]> => {
+  try {
+    const database = await getDatabase();
+
+    const searchPattern = `%${searchText}%`;
+    const allRows = await database.getAllAsync<Transaction>(
+      `SELECT * FROM transactions 
+       WHERE isDeleted = 0 
+       AND (title LIKE ? OR category LIKE ?) 
+       ORDER BY id DESC`,
+      [searchPattern, searchPattern]
+    );
+
+    console.log("Search results:", allRows.length);
+    return allRows;
+  } catch (error) {
+    console.error("Error searching transactions:", error);
+    throw error;
+  }
+};
+
+// Tìm kiếm giao dịch đã xóa (bất đồng bộ)
+export const searchDeletedTransactions = async (
+  searchText: string
+): Promise<Transaction[]> => {
+  try {
+    const database = await getDatabase();
+
+    const searchPattern = `%${searchText}%`;
+    const allRows = await database.getAllAsync<Transaction>(
+      `SELECT * FROM transactions 
+       WHERE isDeleted = 1 
+       AND (title LIKE ? OR category LIKE ?) 
+       ORDER BY deletedAt DESC`,
+      [searchPattern, searchPattern]
+    );
+
+    console.log("Search deleted results:", allRows.length);
+    return allRows;
+  } catch (error) {
+    console.error("Error searching deleted transactions:", error);
+    throw error;
+  }
+};
+
 // Cập nhật giao dịch (bất đồng bộ)
 // Chỉ cập nhật các trường có thể chỉnh sửa, không động vào isDeleted và deletedAt
 export const updateTransaction = async (

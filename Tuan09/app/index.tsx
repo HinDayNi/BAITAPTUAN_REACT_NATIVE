@@ -39,6 +39,7 @@ export default function Index() {
   const [amount, setAmount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
+  const [searchText, setSearchText] = useState("");
 
   // Sử dụng useRef để quản lý input
   const titleInputRef = useRef<TextInput>(null);
@@ -73,6 +74,21 @@ export default function Index() {
     } catch (error) {
       console.error("Error loading transactions:", error);
       Alert.alert("Lỗi", "Không thể tải dữ liệu");
+    }
+  };
+
+  const handleSearch = async (text: string) => {
+    setSearchText(text);
+    try {
+      if (text.trim() === "") {
+        await loadTransactions();
+      } else {
+        const results = await DB.searchTransactions(text.trim());
+        setTransactions(results);
+      }
+    } catch (error) {
+      console.error("Error searching transactions:", error);
+      Alert.alert("Lỗi", "Không thể tìm kiếm");
     }
   };
 
@@ -291,13 +307,37 @@ export default function Index() {
 
       {/* Transaction List */}
       <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+        <View style={styles.searchHeader}>
+          <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm theo tên hoặc danh mục..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={handleSearch}
+          />
+          {searchText !== "" && (
+            <TouchableOpacity onPress={() => handleSearch("")}>
+              <Text style={styles.clearIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {transactions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyText}>Chưa có giao dịch nào</Text>
+            <Text style={styles.emptyIcon}>{searchText ? "�" : "�📊"}</Text>
+            <Text style={styles.emptyText}>
+              {searchText ? "Không tìm thấy kết quả" : "Chưa có giao dịch nào"}
+            </Text>
             <Text style={styles.emptySubtext}>
-              Nhấn nút + để thêm giao dịch đầu tiên
+              {searchText
+                ? "Thử tìm kiếm với từ khóa khác"
+                : "Nhấn nút + để thêm giao dịch đầu tiên"}
             </Text>
           </View>
         ) : (
@@ -540,11 +580,41 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
+  searchHeader: {
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 12,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
+  clearIcon: {
+    fontSize: 20,
+    color: "#999",
+    paddingHorizontal: 8,
   },
   transactionItem: {
     backgroundColor: "#fff",
