@@ -8,12 +8,22 @@ import {
   Alert,
   ScrollView,
   Linking,
+  ActivityIndicator, // Thêm cho trạng thái loading
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DB from "../database/db";
+import { Feather, MaterialIcons } from "@expo/vector-icons"; // Import Expo Icons
+
+// --- Blue Pastel & Modern Colors ---
+const PRIMARY_BLUE = "#8CB9E3"; // Blue Pastel chủ đạo
+const PRIMARY_DARK = "#4A709E"; // Xanh đậm nhẹ
+const BG_COLOR = "#F4F7FB"; // Màu nền trắng xám nhạt
+const INPUT_BG_COLOR = "#FFFFFF"; // Màu nền input/card
+const SUCCESS_COLOR = "#10B981"; // Xanh lá cho thành công/kết nối
+const DANGER_COLOR = "#EF4444"; // Đỏ cho cảnh báo/xóa
 
 const API_URL_KEY = "@api_url";
 
@@ -37,57 +47,43 @@ export default function Settings() {
   };
 
   const saveApiUrl = async () => {
+    if (!apiUrl.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập URL API");
+      return;
+    }
+
+    if (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://")) {
+      Alert.alert("Lỗi", "URL phải bắt đầu bằng http:// hoặc https://");
+      return;
+    } // Thêm logic kiểm tra kết nối để tăng trải nghiệm người dùng
+
+    let connectionStatus = false;
     try {
-      if (!apiUrl.trim()) {
-        Alert.alert("Lỗi", "Vui lòng nhập URL API");
-        return;
+      const response = await fetch(apiUrl.trim());
+      if (response.ok || response.status === 404) {
+        connectionStatus = true;
       }
+    } catch {}
 
-      // Kiểm tra URL hợp lệ
-      if (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://")) {
-        Alert.alert("Lỗi", "URL phải bắt đầu bằng http:// hoặc https://");
-        return;
-      }
-
-      // Kiểm tra kết nối đến API
-      try {
-        const response = await fetch(apiUrl);
-        // Chấp nhận cả 200 và 404 (404 có nghĩa là endpoint tồn tại nhưng chưa có data)
-        if (!response.ok && response.status !== 404) {
-          Alert.alert(
-            "Cảnh báo",
-            `Không thể kết nối đến API (status: ${response.status}). Bạn vẫn muốn lưu URL này?`,
-            [
-              { text: "Hủy", style: "cancel" },
-              {
-                text: "Lưu",
-                onPress: async () => {
-                  await AsyncStorage.setItem(API_URL_KEY, apiUrl.trim());
-                  Alert.alert("Thành công", "Đã lưu URL API");
-                },
-              },
-            ]
-          );
-          return;
-        }
-      } catch {
-        Alert.alert(
-          "Cảnh báo",
-          "Không thể kết nối đến API. Vui lòng kiểm tra lại URL và kết nối mạng.",
-          [
-            { text: "Hủy", style: "cancel" },
-            {
-              text: "Lưu",
-              onPress: async () => {
-                await AsyncStorage.setItem(API_URL_KEY, apiUrl.trim());
-                Alert.alert("Thành công", "Đã lưu URL API");
-              },
+    if (!connectionStatus) {
+      Alert.alert(
+        "Cảnh báo",
+        "Không thể kết nối đến API. Vui lòng kiểm tra lại URL và kết nối mạng.",
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Vẫn Lưu",
+            onPress: async () => {
+              await AsyncStorage.setItem(API_URL_KEY, apiUrl.trim());
+              Alert.alert("Thành công", "Đã lưu URL API");
             },
-          ]
-        );
-        return;
-      }
+          },
+        ]
+      );
+      return;
+    }
 
+    try {
       await AsyncStorage.setItem(API_URL_KEY, apiUrl.trim());
       Alert.alert(
         "Thành công",
@@ -100,50 +96,44 @@ export default function Settings() {
   };
 
   const handleSync = async () => {
-    try {
-      const savedUrl = await AsyncStorage.getItem(API_URL_KEY);
-      const urlToUse = savedUrl || apiUrl;
+    const savedUrl = await AsyncStorage.getItem(API_URL_KEY);
+    const urlToUse = savedUrl || apiUrl;
 
-      if (!urlToUse.trim()) {
-        Alert.alert("Lỗi", "Vui lòng nhập và lưu URL API trước khi đồng bộ");
-        return;
-      }
-
-      Alert.alert(
-        "Xác nhận đồng bộ",
-        "Thao tác này sẽ xóa toàn bộ dữ liệu trên API và upload lại từ thiết bị. Bạn có chắc chắn?",
-        [
-          { text: "Hủy", style: "cancel" },
-          {
-            text: "Đồng bộ",
-            style: "destructive",
-            onPress: async () => {
-              setIsSyncing(true);
-              try {
-                const count = await DB.syncToApi(urlToUse);
-                Alert.alert(
-                  "Thành công",
-                  `Đã đồng bộ ${count} giao dịch lên API`
-                );
-              } catch (error: any) {
-                console.error("Sync error:", error);
-                Alert.alert(
-                  "Lỗi đồng bộ",
-                  error.message ||
-                    "Không thể đồng bộ dữ liệu. Vui lòng kiểm tra URL API."
-                );
-              } finally {
-                setIsSyncing(false);
-              }
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error("Error in handleSync:", error);
-      Alert.alert("Lỗi", "Có lỗi xảy ra khi đồng bộ");
-      setIsSyncing(false);
+    if (!urlToUse.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập và lưu URL API trước khi đồng bộ");
+      return;
     }
+
+    Alert.alert(
+      "Xác nhận đồng bộ (Overwrite)",
+      "Thao tác này sẽ XÓA toàn bộ dữ liệu trên API và upload lại từ thiết bị. Bạn có chắc chắn?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Đồng bộ",
+          style: "destructive",
+          onPress: async () => {
+            setIsSyncing(true);
+            try {
+              const count = await DB.syncToApi(urlToUse);
+              Alert.alert(
+                "Thành công",
+                `Đã đồng bộ ${count} giao dịch lên API`
+              );
+            } catch (error: any) {
+              console.error("Sync error:", error);
+              Alert.alert(
+                "Lỗi đồng bộ",
+                error.message ||
+                  "Không thể đồng bộ dữ liệu. Vui lòng kiểm tra URL API."
+              );
+            } finally {
+              setIsSyncing(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const openMockApiGuide = () => {
@@ -155,114 +145,162 @@ export default function Settings() {
       "Cấu trúc API",
       `Endpoint MockAPI cần có cấu trúc:
 
-📋 Resource name: transactions (hoặc tương tự)
+📋 Resource name: transactions
 
-🔧 Schema:
+🔧 Schema (Fields):
 • title: string
 • amount: number
 • category: string
 • createdAt: string
-• type: string
+• type: "Thu" | "Chi" (string)
 
 📝 Ví dụ URL:
-https://[your-id].mockapi.io/transactions
-
-⚠️ Lưu ý:
-- Không cần trường id, isDeleted, deletedAt
-- Chỉ đồng bộ giao dịch chưa xóa`,
-      [{ text: "OK" }]
+https://[your-id].mockapi.io/transactions`,
+      [{ text: "Đã hiểu" }]
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
-
+            <StatusBar style="light" />      {/* Header */}     {" "}
       <View style={styles.header}>
+               {" "}
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>← Quay lại</Text>
+                    <Feather name="arrow-left" size={24} color="#FFFFFF" />     
+           {" "}
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cài đặt đồng bộ</Text>
-        <View style={styles.placeholder} />
+                <Text style={styles.headerTitle}>Cài đặt đồng bộ</Text>
+                <View style={styles.headerPlaceholder} />     {" "}
       </View>
-
+           {" "}
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔗 Cấu hình API</Text>
-
-          <Text style={styles.label}>URL API MockAPI:</Text>
+                        {/* Cấu hình API */}       {" "}
+        <View style={styles.card}>
+                   {" "}
+          <Text style={styles.sectionTitle}>
+                        <Feather name="link" size={20} color={PRIMARY_DARK} />{" "}
+            Cấu hình API          {" "}
+          </Text>
+                    <Text style={styles.label}>URL API MockAPI:</Text>
+                   {" "}
           <TextInput
             style={styles.input}
             value={apiUrl}
             onChangeText={setApiUrl}
             placeholder="https://your-id.mockapi.io/transactions"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#A9B5C8"
             autoCapitalize="none"
             autoCorrect={false}
           />
-
+                   {" "}
           <TouchableOpacity style={styles.saveButton} onPress={saveApiUrl}>
-            <Text style={styles.saveButtonText}>💾 Lưu URL</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.helpButton}
-            onPress={showApiStructure}
-          >
-            <Text style={styles.helpButtonText}>📋 Xem cấu trúc API</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={openMockApiGuide}
-          >
-            <Text style={styles.linkButtonText}>
-              🌐 Mở MockAPI.io (tạo API mới)
+                        <Feather name="save" size={20} color="#FFFFFF" />       
+               {" "}
+            <Text style={styles.saveButtonText}>
+              Lưu URL & Kiểm tra kết nối
             </Text>
+                     {" "}
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔄 Đồng bộ dữ liệu</Text>
-
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              • Xóa toàn bộ dữ liệu trên API{"\n"}• Upload tất cả giao dịch từ
-              thiết bị{"\n"}• Chỉ đồng bộ giao dịch chưa xóa
-            </Text>
+                   {" "}
+          <View style={styles.buttonGroup}>
+                       {" "}
+            <TouchableOpacity
+              style={[styles.helpButton, { flex: 1 }]}
+              onPress={showApiStructure}
+            >
+                           {" "}
+              <Feather name="info" size={16} color={PRIMARY_DARK} />           
+                <Text style={styles.helpButtonText}>Cấu trúc</Text>           {" "}
+            </TouchableOpacity>
+                       {" "}
+            <TouchableOpacity
+              style={[styles.linkButton, { flex: 1 }]}
+              onPress={openMockApiGuide}
+            >
+                           {" "}
+              <Feather name="external-link" size={16} color={PRIMARY_DARK} />   
+                        <Text style={styles.helpButtonText}>Tạo MockAPI</Text> 
+                       {" "}
+            </TouchableOpacity>
+                     {" "}
           </View>
-
+                 {" "}
+        </View>
+                {/* Đồng bộ dữ liệu */}       {" "}
+        <View style={styles.card}>
+                   {" "}
+          <Text style={styles.sectionTitle}>
+                        <Feather name="repeat" size={20} color={PRIMARY_DARK} />{" "}
+            Đồng bộ dữ liệu          {" "}
+          </Text>
+                   {" "}
+          <View style={styles.infoBox}>
+                       {" "}
+            <MaterialIcons
+              name="warning-amber"
+              size={20}
+              color={PRIMARY_DARK}
+              style={{ marginRight: 8 }}
+            />
+                       {" "}
+            <Text style={styles.infoText}>
+                            **Cảnh báo:** Thao tác này sẽ **XÓA** toàn bộ dữ
+              liệu giao dịch trên API và tải lại từ thiết bị.            {" "}
+            </Text>
+                     {" "}
+          </View>
+                   {" "}
           <TouchableOpacity
             style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
             onPress={handleSync}
             disabled={isSyncing}
           >
+                       {" "}
+            {isSyncing ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Feather name="upload-cloud" size={20} color="#FFFFFF" />
+            )}
+                       {" "}
             <Text style={styles.syncButtonText}>
-              {isSyncing ? "⏳ Đang đồng bộ..." : "🔄 Đồng bộ lên API"}
+                            {isSyncing ? "Đang đồng bộ..." : "Đồng bộ lên API"} 
+                       {" "}
             </Text>
+                     {" "}
           </TouchableOpacity>
+                 {" "}
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ℹ️ Hướng dẫn</Text>
-
+                {/* Hướng dẫn */}       {" "}
+        <View style={styles.card}>
+                   {" "}
+          <Text style={styles.sectionTitle}>
+                       {" "}
+            <Feather name="help-circle" size={20} color={PRIMARY_DARK} /> Hướng
+            dẫn          {" "}
+          </Text>
+                   {" "}
           <View style={styles.guideBox}>
+                       {" "}
             <Text style={styles.guideText}>
-              <Text style={styles.guideStep}>Bước 1:</Text> Truy cập MockAPI.io
-              và tạo project mới{"\n\n"}
-              <Text style={styles.guideStep}>Bước 2:</Text> Tạo resource
-              transactions với schema theo cấu trúc{"\n\n"}
-              <Text style={styles.guideStep}>Bước 3:</Text> Copy URL endpoint và
-              paste vào ô trên{"\n\n"}
-              <Text style={styles.guideStep}>Bước 4:</Text> Nhấn Lưu URL sau đó
-              nhấn Đồng bộ lên API
+                            <Text style={styles.guideStep}>1. Truy cập</Text>{" "}
+              MockAPI.io và tạo project mới.{"\n\n"}             {" "}
+              <Text style={styles.guideStep}>2. Tạo resource</Text>{" "}
+              **transactions** với schema theo cấu trúc đã xem.{"\n\n"}         
+                  <Text style={styles.guideStep}>3. Copy URL</Text> endpoint và
+              paste vào ô cấu hình.{"\n\n"}             {" "}
+              <Text style={styles.guideStep}>4. Lưu URL</Text> sau đó nhấn
+              **Đồng bộ lên API** để sao lưu.            {" "}
             </Text>
+                     {" "}
           </View>
+                 {" "}
         </View>
+             {" "}
       </ScrollView>
+         {" "}
     </SafeAreaView>
   );
 }
@@ -270,163 +308,191 @@ https://[your-id].mockapi.io/transactions
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFBF9",
+    backgroundColor: BG_COLOR,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#7FCF9A",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: PRIMARY_BLUE,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: PRIMARY_DARK,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     elevation: 5,
   },
   backButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   backButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    // Icon đã thay thế text
+    display: "none",
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  placeholder: {
-    width: 80,
+  headerPlaceholder: {
+    width: 40,
   },
   content: {
     flex: 1,
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-    backgroundColor: "#fff",
-    borderRadius: 16,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+  }, // --- Card Chung ---
+  card: {
+    marginBottom: 20,
+    backgroundColor: INPUT_BG_COLOR,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: PRIMARY_DARK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
     elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#5B6B6A",
+    fontWeight: "700",
+    color: PRIMARY_DARK,
     marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   label: {
     fontSize: 14,
-    color: "#5B6B6A",
-    marginBottom: 8,
+    color: PRIMARY_DARK,
+    marginBottom: 10,
     fontWeight: "600",
   },
   input: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: BG_COLOR,
     borderRadius: 12,
     padding: 16,
-    color: "#333",
+    color: PRIMARY_DARK,
     fontSize: 14,
-    borderWidth: 2,
-    borderColor: "#E8F5E8",
-    marginBottom: 12,
-  },
+    borderWidth: 1,
+    borderColor: PRIMARY_BLUE + "40", // Viền xanh pastel nhạt
+    marginBottom: 16,
+  }, // --- Nút Lưu (Chính) ---
+
   saveButton: {
-    backgroundColor: "#65B57E",
-    borderRadius: 12,
+    backgroundColor: PRIMARY_BLUE,
+    borderRadius: 16,
     padding: 16,
     alignItems: "center",
     marginBottom: 12,
-    shadowColor: "#7FCF9A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: PRIMARY_DARK,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
+  }, // --- Nút Nhóm (Inline) ---
+
+  buttonGroup: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 4,
   },
   helpButton: {
-    backgroundColor: "#E8F5E8",
+    backgroundColor: BG_COLOR,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
-    marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#7FCF9A",
+    borderColor: PRIMARY_BLUE + "40",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 4,
   },
   helpButtonText: {
-    color: "#65B57E",
+    color: PRIMARY_DARK,
     fontSize: 14,
     fontWeight: "600",
   },
   linkButton: {
-    backgroundColor: "#F0F9FF",
+    backgroundColor: BG_COLOR,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#7DD3FC",
-  },
-  linkButtonText: {
-    color: "#0369A1",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+    borderColor: PRIMARY_BLUE + "40",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 4,
+  }, // --- Info Box (Cảnh báo) ---
+
   infoBox: {
-    backgroundColor: "#F0F9FF",
+    backgroundColor: PRIMARY_BLUE + "20",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#7FCF9A",
+    borderWidth: 1,
+    borderColor: PRIMARY_BLUE,
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   infoText: {
-    color: "#5B6B6A",
+    color: PRIMARY_DARK,
     fontSize: 14,
     lineHeight: 22,
-  },
+    flexShrink: 1,
+  }, // --- Nút Đồng bộ (Chính) ---
   syncButton: {
-    backgroundColor: "#7FCF9A",
-    borderRadius: 12,
+    backgroundColor: PRIMARY_BLUE,
+    borderRadius: 16,
     padding: 18,
     alignItems: "center",
-    shadowColor: "#65B57E",
-    shadowOffset: { width: 0, height: 3 },
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: PRIMARY_DARK,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 4,
   },
   syncButtonDisabled: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#D1D5DB",
+    shadowOpacity: 0,
   },
   syncButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700",
+  }, // --- Hướng dẫn ---
   guideBox: {
-    backgroundColor: "#F8F9FA",
-    borderRadius: 12,
+    backgroundColor: BG_COLOR,
+    borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#E8F5E8",
+    borderColor: PRIMARY_BLUE + "40",
   },
   guideText: {
-    color: "#5B6B6A",
+    color: PRIMARY_DARK,
     fontSize: 14,
     lineHeight: 24,
   },
   guideStep: {
-    color: "#65B57E",
-    fontWeight: "bold",
+    color: PRIMARY_DARK,
+    fontWeight: "700",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Text,
   View,
@@ -11,6 +11,24 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import * as DB from "../database/db";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons"; // Import Expo Icons
+
+const COLORS = {
+  primary: "#6495ED",
+  primaryDark: "#304674",
+  primaryLight: "#EEF3FF",
+  secondary: "#98AFC7",
+  text: "#1F2937",
+  textLight: "#6B7280",
+  background: "#F9FAFB",
+  white: "#FFFFFF",
+  income: "#10B981",
+  incomeLight: "#D1FAE5",
+  expense: "#EF4444",
+  expenseLight: "#FEE2E2",
+  border: "#E5E7EB",
+  shadowColor: "rgba(0, 0, 0, 0.1)",
+};
 
 interface Transaction {
   id?: number;
@@ -29,22 +47,40 @@ interface MonthlyStats {
 }
 
 const { width } = Dimensions.get("window");
-const CHART_WIDTH = width - 32;
-const CHART_HEIGHT = 300;
-const BAR_WIDTH = 40;
+const CHART_WIDTH = width - 48;
+const CHART_HEIGHT = 280;
+const BAR_WIDTH = 35;
 
 export default function Statistics() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-
   const calculateMonthlyStats = React.useCallback((data: Transaction[]) => {
     const statsMap = new Map<string, MonthlyStats>();
 
+    const parseDate = (value: string) => {
+      const d1 = new Date(value);
+      if (!isNaN(d1.getTime())) return d1;
+      const m = value.match(
+        /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+      );
+      if (m) {
+        const day = Number(m[1]);
+        const mon = Number(m[2]) - 1;
+        const year = Number(m[3]);
+        const hour = Number(m[4] || 0);
+        const minute = Number(m[5] || 0);
+        const second = Number(m[6] || 0);
+        return new Date(year, mon, day, hour, minute, second);
+      }
+      return new Date();
+    };
+
     data.forEach((txn) => {
-      // Parse date from Vietnamese format: "31/10/2025, 14:30:00"
-      const dateParts = txn.createdAt.split(",")[0].split("/");
-      const month = `${dateParts[1]}/${dateParts[2]}`; // MM/YYYY
+      const d = parseDate(txn.createdAt);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = String(d.getFullYear());
+      const month = `${mm}/${yyyy}`; // MM/YYYY
 
       if (!statsMap.has(month)) {
         statsMap.set(month, { month, income: 0, expense: 0, balance: 0 });
@@ -59,7 +95,6 @@ export default function Statistics() {
       stat.balance = stat.income - stat.expense;
     });
 
-    // Convert to array and sort by date
     const statsArray = Array.from(statsMap.values()).sort((a, b) => {
       const [monthA, yearA] = a.month.split("/").map(Number);
       const [monthB, yearB] = b.month.split("/").map(Number);
@@ -67,11 +102,9 @@ export default function Statistics() {
       return monthA - monthB;
     });
 
-    // Get last 6 months
     const last6Months = statsArray.slice(-6);
     setMonthlyStats(last6Months);
 
-    // Set current month as selected
     if (last6Months.length > 0) {
       setSelectedMonth(last6Months[last6Months.length - 1].month);
     }
@@ -93,14 +126,8 @@ export default function Statistics() {
     }, [loadData])
   );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const getMaxValue = () => {
-    const max = Math.max(
-      ...monthlyStats.flatMap((stat) => [stat.income, stat.expense])
-    );
+    const max = Math.max(...monthlyStats.flatMap((s) => [s.income, s.expense]));
     return max > 0 ? max : 1;
   };
 
@@ -114,7 +141,7 @@ export default function Statistics() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.chartScrollView}
+        contentContainerStyle={{ paddingHorizontal: 0 }}
       >
         <View
           style={[
@@ -122,24 +149,17 @@ export default function Statistics() {
             { width: Math.max(CHART_WIDTH, totalWidth) },
           ]}
         >
-          {/* Y-axis labels */}
           <View style={styles.yAxisContainer}>
             <Text style={styles.yAxisLabel}>
-              {(maxValue / 1000000).toFixed(1)}M
-            </Text>
-            <Text style={styles.yAxisLabel}>
-              {(maxValue / 2000000).toFixed(1)}M
+              {(maxValue / 1_000_000).toFixed(0)}M
             </Text>
             <Text style={styles.yAxisLabel}>0</Text>
           </View>
-
-          {/* Bars */}
           <View style={styles.barsContainer}>
-            {monthlyStats.map((stat, index) => {
-              const incomeHeight =
-                (stat.income / maxValue) * (CHART_HEIGHT - 60);
-              const expenseHeight =
-                (stat.expense / maxValue) * (CHART_HEIGHT - 60);
+            {monthlyStats.map((stat) => {
+              const barAreaHeight = CHART_HEIGHT - 40;
+              const incomeHeight = (stat.income / maxValue) * barAreaHeight;
+              const expenseHeight = (stat.expense / maxValue) * barAreaHeight;
 
               return (
                 <TouchableOpacity
@@ -147,42 +167,37 @@ export default function Statistics() {
                   style={styles.barGroup}
                   onPress={() => setSelectedMonth(stat.month)}
                 >
-                  {/* Income Bar */}
                   <View style={styles.barWrapper}>
                     <View
                       style={[
                         styles.bar,
-                        styles.incomeBar,
                         {
+                          backgroundColor: COLORS.income,
                           height: incomeHeight,
                           width: BAR_WIDTH,
                         },
                       ]}
                     />
                   </View>
-
-                  {/* Expense Bar */}
                   <View style={styles.barWrapper}>
                     <View
                       style={[
                         styles.bar,
-                        styles.expenseBar,
                         {
+                          backgroundColor: COLORS.expense,
                           height: expenseHeight,
                           width: BAR_WIDTH,
                         },
                       ]}
                     />
                   </View>
-
-                  {/* Month label */}
                   <Text
                     style={[
                       styles.monthLabel,
                       selectedMonth === stat.month && styles.monthLabelActive,
                     ]}
                   >
-                    {stat.month}
+                    {stat.month.split("/")[0]}
                   </Text>
                 </TouchableOpacity>
               );
@@ -228,7 +243,7 @@ export default function Statistics() {
       .map(([category, stats]) => ({
         category,
         ...stats,
-        total: stats.expense, // Sort by expense
+        total: stats.expense,
       }))
       .sort((a, b) => b.total - a.total);
   };
@@ -238,43 +253,43 @@ export default function Statistics() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
-
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <Feather name="arrow-left" size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>THỐNG KÊ</Text>
+        <Text style={styles.headerTitle}>THỐNG KÊ TÀI CHÍNH</Text>
         <View style={styles.placeholder} />
       </View>
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Overall Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.cardTitle}>Tổng quan</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            <Feather name="bar-chart-2" size={20} color={COLORS.primary} /> Tổng
+            quan
+          </Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Tổng thu</Text>
               <Text style={[styles.summaryAmount, styles.incomeText]}>
-                +₫{getTotalIncome().toLocaleString()}
+                +{getTotalIncome().toLocaleString()}₫
               </Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Tổng chi</Text>
               <Text style={[styles.summaryAmount, styles.expenseText]}>
-                -₫{getTotalExpense().toLocaleString()}
+                -{getTotalExpense().toLocaleString()}₫
               </Text>
             </View>
           </View>
           <View style={styles.balanceRow}>
-            <Text style={styles.balanceLabel}>Số dư hiện tại</Text>
+            <Text style={styles.balanceLabel}>Số dư toàn thời gian</Text>
             <Text
               style={[
                 styles.balanceAmount,
@@ -283,51 +298,63 @@ export default function Statistics() {
                   : styles.expenseText,
               ]}
             >
-              ₫{(getTotalIncome() - getTotalExpense()).toLocaleString()}
+              {(getTotalIncome() - getTotalExpense()).toLocaleString()}₫
             </Text>
           </View>
         </View>
 
         {/* Monthly Chart */}
-        <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Biểu đồ theo tháng</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            <Feather name="trending-up" size={20} color={COLORS.primary} /> Biểu
+            đồ 6 tháng gần nhất
+          </Text>
           <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendColor, styles.incomeBar]} />
+              <View
+                style={[styles.legendColor, { backgroundColor: COLORS.income }]}
+              />
               <Text style={styles.legendText}>Thu</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendColor, styles.expenseBar]} />
+              <View
+                style={[
+                  styles.legendColor,
+                  { backgroundColor: COLORS.expense },
+                ]}
+              />
               <Text style={styles.legendText}>Chi</Text>
             </View>
           </View>
-
           {monthlyStats.length > 0 ? (
             renderBarChart()
           ) : (
             <View style={styles.emptyChart}>
-              <Text style={styles.emptyIcon}>📊</Text>
+              <MaterialCommunityIcons
+                name="chart-bar"
+                size={48}
+                color={COLORS.textLight}
+              />
               <Text style={styles.emptyText}>Chưa có dữ liệu</Text>
             </View>
           )}
         </View>
-
-        {/* Selected Month Details */}
         {selectedStats && (
-          <View style={styles.detailsCard}>
+          <View style={styles.card}>
             <Text style={styles.cardTitle}>
-              Chi tiết tháng {selectedStats.month}
+              <Feather name="calendar" size={20} color={COLORS.primary} /> Chi
+              tiết tháng {selectedStats.month}
             </Text>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Thu nhập</Text>
               <Text style={[styles.detailAmount, styles.incomeText]}>
-                +₫{selectedStats.income.toLocaleString()}
+                +{selectedStats.income.toLocaleString()}₫
               </Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Chi tiêu</Text>
               <Text style={[styles.detailAmount, styles.expenseText]}>
-                -₫{selectedStats.expense.toLocaleString()}
+                -{selectedStats.expense.toLocaleString()}₫
               </Text>
             </View>
             <View style={[styles.detailRow, styles.detailRowBorder]}>
@@ -343,15 +370,16 @@ export default function Statistics() {
                     : styles.expenseText,
                 ]}
               >
-                ₫{selectedStats.balance.toLocaleString()}
+                {selectedStats.balance.toLocaleString()}₫
               </Text>
             </View>
           </View>
         )}
-
-        {/* Category Statistics */}
-        <View style={styles.categoryCard}>
-          <Text style={styles.cardTitle}>Thống kê theo danh mục</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            <Feather name="tag" size={20} color={COLORS.primary} /> Phân tích
+            chi tiêu theo danh mục
+          </Text>
           {getCategoryStats().map((stat) => {
             const totalExpense = getTotalExpense();
             const percentage =
@@ -362,7 +390,7 @@ export default function Statistics() {
                 <View style={styles.categoryHeader}>
                   <Text style={styles.categoryName}>{stat.category}</Text>
                   <Text style={styles.categoryAmount}>
-                    ₫{stat.expense.toLocaleString()}
+                    -{stat.expense.toLocaleString()}₫
                   </Text>
                 </View>
                 <View style={styles.progressBarContainer}>
@@ -374,7 +402,7 @@ export default function Statistics() {
                   />
                 </View>
                 <Text style={styles.categoryPercentage}>
-                  {percentage.toFixed(1)}% của tổng chi tiêu
+                  Chiếm {percentage.toFixed(1)}% tổng chi tiêu
                 </Text>
               </View>
             );
@@ -388,60 +416,71 @@ export default function Statistics() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFBF9",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#7FCF9A",
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 5,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: "#fff",
-    fontWeight: "bold",
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 1,
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.white,
+    letterSpacing: 0.5,
   },
   placeholder: {
-    width: 44,
+    width: 40,
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: 20,
   },
-  summaryCard: {
-    backgroundColor: "#fff",
-    margin: 16,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+  card: {
+    backgroundColor: COLORS.white,
+    marginVertical: 10,
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
+
   summaryRow: {
     flexDirection: "row",
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   summaryItem: {
     flex: 1,
@@ -449,60 +488,45 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     width: 1,
-    backgroundColor: "#e5e5e5",
+    backgroundColor: COLORS.border,
     marginHorizontal: 16,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: "#666",
+    fontSize: 13,
+    color: COLORS.textLight,
     marginBottom: 8,
     textTransform: "uppercase",
     fontWeight: "600",
   },
   summaryAmount: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "800",
   },
   incomeText: {
-    color: "#7FCF9A",
+    color: COLORS.income,
   },
   expenseText: {
-    color: "#F26C6C",
+    color: COLORS.expense,
   },
   balanceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
   },
   balanceLabel: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 15,
+    color: COLORS.text,
     fontWeight: "600",
   },
   balanceAmount: {
     fontSize: 24,
-    fontWeight: "bold",
-  },
-  chartCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    fontWeight: "900",
   },
   legendContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 24,
-    marginBottom: 16,
+    gap: 28,
+    marginBottom: 10,
   },
   legendItem: {
     flexDirection: "row",
@@ -510,32 +534,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   legendColor: {
-    width: 20,
-    height: 20,
+    width: 14,
+    height: 14,
     borderRadius: 4,
   },
   legendText: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 13,
+    color: COLORS.text,
     fontWeight: "500",
-  },
-  chartScrollView: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
   },
   chartContainer: {
     height: CHART_HEIGHT,
     flexDirection: "row",
     paddingVertical: 10,
+    marginHorizontal: 0,
   },
   yAxisContainer: {
     width: 50,
     justifyContent: "space-between",
     paddingBottom: 30,
+    paddingVertical: 0,
   },
   yAxisLabel: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: 11,
+    color: COLORS.textLight,
     textAlign: "right",
   },
   barsContainer: {
@@ -545,67 +567,51 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     borderLeftWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#e5e5e5",
-    paddingBottom: 30,
+    borderColor: COLORS.border,
+    paddingBottom: 10,
     paddingLeft: 10,
   },
   barGroup: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 8,
+    gap: 6,
+    marginBottom: 10,
+    paddingHorizontal: 5,
   },
   barWrapper: {
     alignItems: "center",
     justifyContent: "flex-end",
   },
   bar: {
-    borderRadius: 4,
+    borderRadius: 6,
     minHeight: 2,
-  },
-  incomeBar: {
-    backgroundColor: "#7FCF9A",
-  },
-  expenseBar: {
-    backgroundColor: "#F26C6C",
   },
   monthLabel: {
     position: "absolute",
-    bottom: -25,
+    bottom: -20,
     fontSize: 11,
-    color: "#999",
+    color: COLORS.textLight,
     fontWeight: "500",
-    width: BAR_WIDTH * 2 + 8,
+    width: BAR_WIDTH * 2 + 6,
     textAlign: "center",
   },
   monthLabelActive: {
-    color: "#65B57E",
-    fontWeight: "bold",
+    color: COLORS.primary,
+    fontWeight: "700",
   },
   emptyChart: {
-    height: 200,
+    height: 180,
     justifyContent: "center",
     alignItems: "center",
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 12,
   },
   emptyText: {
-    fontSize: 16,
-    color: "#999",
+    fontSize: 15,
+    color: COLORS.textLight,
+    marginTop: 8,
   },
-  detailsCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
+
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -614,18 +620,18 @@ const styles = StyleSheet.create({
   },
   detailRowBorder: {
     borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    marginTop: 8,
+    borderTopColor: COLORS.border,
+    marginTop: 10,
     paddingTop: 16,
   },
   detailLabel: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.text,
+    fontWeight: "500",
   },
   detailLabelBold: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "700",
   },
   detailAmount: {
     fontSize: 16,
@@ -633,19 +639,7 @@ const styles = StyleSheet.create({
   },
   detailAmountBold: {
     fontSize: 20,
-    fontWeight: "bold",
-  },
-  categoryCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    fontWeight: "800",
   },
   categoryItem: {
     marginBottom: 20,
@@ -657,29 +651,30 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: COLORS.text,
   },
   categoryAmount: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#F26C6C",
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.expense,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: COLORS.expenseLight,
     borderRadius: 4,
     overflow: "hidden",
     marginBottom: 4,
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#F26C6C",
+    backgroundColor: COLORS.expense,
     borderRadius: 4,
   },
   categoryPercentage: {
     fontSize: 12,
-    color: "#999",
+    color: COLORS.textLight,
+    fontWeight: "500",
   },
 });
