@@ -299,3 +299,120 @@ export const addSampleData = async (): Promise<void> => {
     throw error;
   }
 };
+
+// ==================== SYNC API FUNCTIONS ====================
+
+// Interface cho API transaction (không có isDeleted, deletedAt)
+export interface ApiTransaction {
+  id?: string;
+  title: string;
+  amount: number;
+  category: string;
+  createdAt: string;
+  type: "Thu" | "Chi";
+}
+
+// Lấy tất cả giao dịch từ API
+export const fetchAllFromApi = async (
+  apiUrl: string
+): Promise<ApiTransaction[]> => {
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      // Nếu là lỗi 404, có thể do chưa có dữ liệu, trả về mảng rỗng
+      if (response.status === 404) {
+        console.log("API endpoint not found or empty, returning empty array");
+        return [];
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching from API:", error);
+    // Nếu là lỗi network hoặc URL không hợp lệ
+    if (error instanceof TypeError) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra lại URL.");
+    }
+    throw error;
+  }
+};
+
+// Xóa tất cả dữ liệu trên API
+export const deleteAllFromApi = async (apiUrl: string): Promise<void> => {
+  try {
+    // Lấy tất cả items
+    const items = await fetchAllFromApi(apiUrl);
+
+    // Nếu không có items, không cần xóa
+    if (items.length === 0) {
+      console.log("No items to delete from API");
+      return;
+    }
+
+    // Xóa từng item
+    const deletePromises = items.map((item) =>
+      fetch(`${apiUrl}/${item.id}`, { method: "DELETE" })
+    );
+
+    await Promise.all(deletePromises);
+    console.log(`Deleted ${items.length} items from API`);
+  } catch (error) {
+    console.error("Error deleting from API:", error);
+    throw error;
+  }
+};
+
+// Upload một giao dịch lên API
+export const uploadToApi = async (
+  apiUrl: string,
+  transaction: Transaction
+): Promise<void> => {
+  try {
+    // Chuyển đổi Transaction thành ApiTransaction (bỏ isDeleted, deletedAt, id)
+    const apiTransaction: ApiTransaction = {
+      title: transaction.title,
+      amount: transaction.amount,
+      category: transaction.category,
+      createdAt: transaction.createdAt,
+      type: transaction.type,
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(apiTransaction),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error uploading to API:", error);
+    throw error;
+  }
+};
+
+// Đồng bộ: Xóa tất cả trên API và upload lại từ local DB
+export const syncToApi = async (apiUrl: string): Promise<number> => {
+  try {
+    // Bước 1: Xóa tất cả dữ liệu trên API
+    await deleteAllFromApi(apiUrl);
+
+    // Bước 2: Lấy tất cả giao dịch chưa xóa từ local database
+    const localTransactions = await getAllTransactions();
+
+    // Bước 3: Upload từng giao dịch lên API
+    for (const transaction of localTransactions) {
+      await uploadToApi(apiUrl, transaction);
+    }
+
+    console.log(`Synced ${localTransactions.length} transactions to API`);
+    return localTransactions.length;
+  } catch (error) {
+    console.error("Error syncing to API:", error);
+    throw error;
+  }
+};

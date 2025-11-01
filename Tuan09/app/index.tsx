@@ -284,6 +284,12 @@ export default function Index() {
 
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push("/settings")}
+        >
+          <Text style={styles.settingsButtonText}>⚙️</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>QUẢN LÝ THU CHI</Text>
         <TouchableOpacity
           style={styles.trashButton}
@@ -530,6 +536,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
     letterSpacing: 1,
+  },
+  settingsButton: {
+    position: "absolute",
+    left: 20,
+    padding: 8,
+  },
+  settingsButtonText: {
+    fontSize: 24,
   },
   trashButton: {
     position: "absolute",
