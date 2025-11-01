@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Text,
   View,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { router, useFocusEffect } from "expo-router";
 import * as DB from "../database/db";
 
 interface Transaction {
@@ -38,7 +39,6 @@ export default function Index() {
   const [amount, setAmount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
-  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Sử dụng useRef để quản lý input
   const titleInputRef = useRef<TextInput>(null);
@@ -58,6 +58,13 @@ export default function Index() {
 
     initializeApp();
   }, []);
+
+  // Load lại dữ liệu khi quay lại từ màn hình edit
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions();
+    }, [])
+  );
 
   const loadTransactions = async () => {
     try {
@@ -82,28 +89,15 @@ export default function Index() {
     }
 
     try {
-      if (editingId) {
-        // Update existing transaction
-        const updatedTransaction: Transaction = {
-          title: title.trim(),
-          amount: numAmount,
-          category: selectedCategory,
-          type: selectedType,
-          createdAt: new Date().toLocaleString("vi-VN"),
-        };
-        await DB.updateTransaction(editingId, updatedTransaction);
-        setEditingId(null);
-      } else {
-        // Add new transaction
-        const newTransaction: Transaction = {
-          title: title.trim(),
-          amount: numAmount,
-          category: selectedCategory,
-          createdAt: new Date().toLocaleString("vi-VN"),
-          type: selectedType,
-        };
-        await DB.addTransaction(newTransaction);
-      }
+      // Add new transaction only
+      const newTransaction: Transaction = {
+        title: title.trim(),
+        amount: numAmount,
+        category: selectedCategory,
+        createdAt: new Date().toLocaleString("vi-VN"),
+        type: selectedType,
+      };
+      await DB.addTransaction(newTransaction);
 
       await loadTransactions();
       resetForm();
@@ -129,32 +123,56 @@ export default function Index() {
   const deleteTransaction = async (id?: number) => {
     if (!id) return;
 
-    Alert.alert("Xóa giao dịch", "Bạn có chắc chắn muốn xóa giao dịch này?", [
+    Alert.alert(
+      "Xóa giao dịch",
+      "Bạn có chắc chắn muốn xóa giao dịch này? Bạn có thể khôi phục từ thùng rác.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await DB.deleteTransaction(id);
+              await loadTransactions();
+              Alert.alert(
+                "Thành công",
+                "Giao dịch đã được chuyển vào thùng rác"
+              );
+            } catch (error) {
+              console.error("Error deleting transaction:", error);
+              Alert.alert("Lỗi", "Không thể xóa giao dịch");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const showDeleteMenu = (transaction: Transaction) => {
+    Alert.alert("Tùy chọn", `Bạn muốn làm gì với "${transaction.title}"?`, [
       { text: "Hủy", style: "cancel" },
       {
         text: "Xóa",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await DB.deleteTransaction(id);
-            await loadTransactions();
-            Alert.alert("Thành công", "Giao dịch đã được xóa");
-          } catch (error) {
-            console.error("Error deleting transaction:", error);
-            Alert.alert("Lỗi", "Không thể xóa giao dịch");
-          }
-        },
+        onPress: () => deleteTransaction(transaction.id),
       },
     ]);
   };
 
   const editTransaction = (transaction: Transaction) => {
-    setTitle(transaction.title);
-    setAmount(transaction.amount.toString());
-    setSelectedCategory(transaction.category);
-    setSelectedType(transaction.type);
-    setEditingId(transaction.id || null);
-    setModalVisible(true);
+    // Chuyển sang màn hình edit với các tham số
+    router.push({
+      pathname: "/edit/[id]",
+      params: {
+        id: transaction.id?.toString() || "0",
+        title: transaction.title,
+        amount: transaction.amount.toString(),
+        category: transaction.category,
+        type: transaction.type,
+        createdAt: transaction.createdAt,
+      },
+    });
   };
 
   const getBalance = () => {
@@ -188,7 +206,12 @@ export default function Index() {
   };
 
   const renderTransactionItem = ({ item }: { item: Transaction }) => (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity
+      style={styles.transactionItem}
+      onPress={() => editTransaction(item)}
+      onLongPress={() => showDeleteMenu(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.transactionLeft}>
         <View
           style={[
@@ -216,22 +239,8 @@ export default function Index() {
         >
           {item.type === "Thu" ? "+" : "-"}₫{item.amount.toLocaleString()}
         </Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => editTransaction(item)}
-          >
-            <Text style={styles.editButtonText}>✏️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => deleteTransaction(item.id)}
-          >
-            <Text style={styles.deleteButtonText}>🗑️</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -241,6 +250,12 @@ export default function Index() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>QUẢN LÝ THU CHI</Text>
+        <TouchableOpacity
+          style={styles.trashButton}
+          onPress={() => router.push("/trash")}
+        >
+          <Text style={styles.trashButtonText}>🗑️</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Total Summary */}
@@ -309,15 +324,12 @@ export default function Index() {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-          setEditingId(null);
           resetForm();
         }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingId ? "Chỉnh sửa giao dịch" : "Thêm giao dịch mới"}
-            </Text>
+            <Text style={styles.modalTitle}>Thêm giao dịch mới</Text>
 
             <Text style={styles.inputLabel}>Loại</Text>
             <View style={styles.typeContainer}>
@@ -407,7 +419,6 @@ export default function Index() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  setEditingId(null);
                   resetForm();
                 }}
               >
@@ -417,9 +428,7 @@ export default function Index() {
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={addTransaction}
               >
-                <Text style={styles.saveButtonText}>
-                  {editingId ? "Cập nhật" : "Lưu"}
-                </Text>
+                <Text style={styles.saveButtonText}>Lưu</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -443,12 +452,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flexDirection: "row",
+    justifyContent: "center",
+    position: "relative",
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#fff",
     letterSpacing: 1,
+  },
+  trashButton: {
+    position: "absolute",
+    right: 20,
+    padding: 8,
+  },
+  trashButtonText: {
+    fontSize: 24,
   },
   summaryCard: {
     backgroundColor: "#fff",
