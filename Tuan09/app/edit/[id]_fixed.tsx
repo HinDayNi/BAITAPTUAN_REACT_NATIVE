@@ -64,7 +64,7 @@ export default function EditTransaction() {
   );
 
   const titleInputRef = useRef<TextInput>(null);
-  const amountInputRef = useRef<TextInput>(null); // 3. Thay thế emoji bằng Expo Icons
+  const amountInputRef = useRef<TextInput>(null);
 
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: { name: string; set: string } } = {
@@ -115,6 +115,9 @@ export default function EditTransaction() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -125,8 +128,9 @@ export default function EditTransaction() {
         <Text style={styles.headerTitle}>Chỉnh sửa giao dịch</Text>
         <View style={styles.headerSpacer} />
       </View>
-      <StatusBar style="light" />
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Thông tin gốc */}
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
             <Feather name="calendar" size={16} color={COLORS.textLight} />
@@ -134,6 +138,8 @@ export default function EditTransaction() {
             <Text style={styles.infoValue}>{createdAt}</Text>
           </View>
         </View>
+
+        {/* Form chỉnh sửa */}
         <View style={styles.formCard}>
           <Text style={styles.inputLabel}>Loại giao dịch</Text>
           <View style={styles.typeContainer}>
@@ -170,6 +176,7 @@ export default function EditTransaction() {
               </Text>
             </TouchableOpacity>
           </View>
+
           <Text style={styles.inputLabel}>Tiêu đề</Text>
           <TextInput
             ref={titleInputRef}
@@ -179,6 +186,7 @@ export default function EditTransaction() {
             value={editTitle}
             onChangeText={setEditTitle}
           />
+
           <Text style={styles.inputLabel}>Số tiền (₫)</Text>
           <TextInput
             ref={amountInputRef}
@@ -189,6 +197,7 @@ export default function EditTransaction() {
             onChangeText={setEditAmount}
             keyboardType="numeric"
           />
+
           <Text style={styles.inputLabel}>Danh mục</Text>
           <View style={styles.categoryContainer}>
             {CATEGORIES.map((cat) => {
