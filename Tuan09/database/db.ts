@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface Transaction {
   id?: number;
@@ -11,66 +11,62 @@ export interface Transaction {
   deletedAt?: string;
 }
 
-let db: SQLite.SQLiteDatabase | null = null;
+// AsyncStorage keys
+const TRANSACTIONS_KEY = "@transactions";
+const COUNTER_KEY = "@transaction_counter";
 
-// Lấy instance database
-const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync("transactions.db");
+// Helper functions for AsyncStorage
+const getAllStoredTransactions = async (): Promise<Transaction[]> => {
+  try {
+    const data = await AsyncStorage.getItem(TRANSACTIONS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error("Error reading transactions:", error);
+    return [];
   }
-  return db;
 };
 
-// Khởi tạo database
+const saveAllTransactions = async (
+  transactions: Transaction[]
+): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+  } catch (error) {
+    console.error("Error saving transactions:", error);
+    throw error;
+  }
+};
+
+const getNextId = async (): Promise<number> => {
+  try {
+    const counter = await AsyncStorage.getItem(COUNTER_KEY);
+    const nextId = counter ? parseInt(counter) + 1 : 1;
+    await AsyncStorage.setItem(COUNTER_KEY, nextId.toString());
+    return nextId;
+  } catch (error) {
+    console.error("Error getting next ID:", error);
+    return Date.now(); // Fallback to timestamp
+  }
+};
+
+// Khởi tạo database (AsyncStorage không cần init, nhưng giữ để tương thích)
 export const initDatabase = async (): Promise<void> => {
   try {
-    const database = await getDatabase();
-
-    // Tạo bảng mới hoặc kiểm tra và thêm cột nếu thiếu
-    await database.execAsync(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        amount REAL NOT NULL,
-        category TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
-        type TEXT NOT NULL,
-        isDeleted INTEGER DEFAULT 0,
-        deletedAt TEXT
-      );
-    `);
-
-    // Migration: Thêm cột isDeleted và deletedAt nếu chưa có
-    try {
-      // Kiểm tra xem cột isDeleted đã tồn tại chưa
-      const result = await database.getAllAsync(
-        "PRAGMA table_info(transactions)"
-      );
-
-      const columns = result.map((col: any) => col.name);
-
-      // Thêm cột isDeleted nếu chưa có
-      if (!columns.includes("isDeleted")) {
-        await database.execAsync(`
-          ALTER TABLE transactions ADD COLUMN isDeleted INTEGER DEFAULT 0;
-        `);
-        console.log("Added isDeleted column");
-      }
-
-      // Thêm cột deletedAt nếu chưa có
-      if (!columns.includes("deletedAt")) {
-        await database.execAsync(`
-          ALTER TABLE transactions ADD COLUMN deletedAt TEXT;
-        `);
-        console.log("Added deletedAt column");
-      }
-    } catch (migrationError) {
-      console.log("Migration already done or not needed:", migrationError);
+    // Đảm bảo có key transactions trong AsyncStorage
+    const existingData = await AsyncStorage.getItem(TRANSACTIONS_KEY);
+    if (existingData === null) {
+      await AsyncStorage.setItem(TRANSACTIONS_KEY, JSON.stringify([]));
     }
 
-    console.log("Database initialized successfully");
+    // Đảm bảo có counter
+    const existingCounter = await AsyncStorage.getItem(COUNTER_KEY);
+    if (existingCounter === null) {
+      await AsyncStorage.setItem(COUNTER_KEY, "0");
+    }
+
+    console.log("AsyncStorage database initialized successfully");
   } catch (error) {
-    console.error("Error initializing database:", error);
+    console.error("Error initializing AsyncStorage database:", error);
     throw error;
   }
 };
@@ -80,22 +76,20 @@ export const addTransaction = async (
   transaction: Transaction
 ): Promise<number> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
+    const newId = await getNextId();
 
-    const result = await database.runAsync(
-      `INSERT INTO transactions (title, amount, category, createdAt, type, isDeleted) 
-       VALUES (?, ?, ?, ?, ?, 0)`,
-      [
-        transaction.title,
-        transaction.amount,
-        transaction.category,
-        transaction.createdAt,
-        transaction.type,
-      ]
-    );
+    const newTransaction: Transaction = {
+      ...transaction,
+      id: newId,
+      isDeleted: 0,
+    };
 
-    console.log("Transaction added with ID:", result.lastInsertRowId);
-    return result.lastInsertRowId;
+    transactions.push(newTransaction);
+    await saveAllTransactions(transactions);
+
+    console.log("Transaction added with ID:", newId);
+    return newId;
   } catch (error) {
     console.error("Error adding transaction:", error);
     throw error;
@@ -105,14 +99,14 @@ export const addTransaction = async (
 // Lấy tất cả giao dịch chưa xóa (bất đồng bộ)
 export const getAllTransactions = async (): Promise<Transaction[]> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
 
-    const allRows = await database.getAllAsync<Transaction>(
-      "SELECT * FROM transactions WHERE isDeleted = 0 ORDER BY id DESC"
-    );
+    const activeTransactions = transactions
+      .filter((t) => t.isDeleted === 0)
+      .sort((a, b) => (b.id || 0) - (a.id || 0)); // Sort by ID DESC
 
-    console.log("Fetched transactions:", allRows.length);
-    return allRows;
+    console.log("Fetched transactions:", activeTransactions.length);
+    return activeTransactions;
   } catch (error) {
     console.error("Error fetching transactions:", error);
     throw error;
@@ -122,14 +116,20 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
 // Lấy tất cả giao dịch đã xóa (bất đồng bộ)
 export const getDeletedTransactions = async (): Promise<Transaction[]> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
 
-    const allRows = await database.getAllAsync<Transaction>(
-      "SELECT * FROM transactions WHERE isDeleted = 1 ORDER BY deletedAt DESC"
-    );
+    const deletedTransactions = transactions
+      .filter((t) => t.isDeleted === 1)
+      .sort((a, b) => {
+        // Sort by deletedAt DESC
+        if (!a.deletedAt || !b.deletedAt) return 0;
+        return (
+          new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
+        );
+      });
 
-    console.log("Fetched deleted transactions:", allRows.length);
-    return allRows;
+    console.log("Fetched deleted transactions:", deletedTransactions.length);
+    return deletedTransactions;
   } catch (error) {
     console.error("Error fetching deleted transactions:", error);
     throw error;
@@ -141,19 +141,20 @@ export const searchTransactions = async (
   searchText: string
 ): Promise<Transaction[]> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
+    const searchLower = searchText.toLowerCase();
 
-    const searchPattern = `%${searchText}%`;
-    const allRows = await database.getAllAsync<Transaction>(
-      `SELECT * FROM transactions 
-       WHERE isDeleted = 0 
-       AND (title LIKE ? OR category LIKE ?) 
-       ORDER BY id DESC`,
-      [searchPattern, searchPattern]
-    );
+    const filteredTransactions = transactions
+      .filter(
+        (t) =>
+          t.isDeleted === 0 &&
+          (t.title.toLowerCase().includes(searchLower) ||
+            t.category.toLowerCase().includes(searchLower))
+      )
+      .sort((a, b) => (b.id || 0) - (a.id || 0)); // Sort by ID DESC
 
-    console.log("Search results:", allRows.length);
-    return allRows;
+    console.log("Search results:", filteredTransactions.length);
+    return filteredTransactions;
   } catch (error) {
     console.error("Error searching transactions:", error);
     throw error;
@@ -165,19 +166,26 @@ export const searchDeletedTransactions = async (
   searchText: string
 ): Promise<Transaction[]> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
+    const searchLower = searchText.toLowerCase();
 
-    const searchPattern = `%${searchText}%`;
-    const allRows = await database.getAllAsync<Transaction>(
-      `SELECT * FROM transactions 
-       WHERE isDeleted = 1 
-       AND (title LIKE ? OR category LIKE ?) 
-       ORDER BY deletedAt DESC`,
-      [searchPattern, searchPattern]
-    );
+    const filteredTransactions = transactions
+      .filter(
+        (t) =>
+          t.isDeleted === 1 &&
+          (t.title.toLowerCase().includes(searchLower) ||
+            t.category.toLowerCase().includes(searchLower))
+      )
+      .sort((a, b) => {
+        // Sort by deletedAt DESC
+        if (!a.deletedAt || !b.deletedAt) return 0;
+        return (
+          new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
+        );
+      });
 
-    console.log("Search deleted results:", allRows.length);
-    return allRows;
+    console.log("Search deleted results:", filteredTransactions.length);
+    return filteredTransactions;
   } catch (error) {
     console.error("Error searching deleted transactions:", error);
     throw error;
@@ -191,21 +199,25 @@ export const updateTransaction = async (
   transaction: Transaction
 ): Promise<void> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
 
-    await database.runAsync(
-      `UPDATE transactions 
-       SET title = ?, amount = ?, category = ?, type = ? 
-       WHERE id = ? AND isDeleted = 0`,
-      [
-        transaction.title,
-        transaction.amount,
-        transaction.category,
-        transaction.type,
-        id,
-      ]
+    const index = transactions.findIndex(
+      (t) => t.id === id && t.isDeleted === 0
     );
+    if (index === -1) {
+      throw new Error("Transaction not found or already deleted");
+    }
 
+    // Update only editable fields
+    transactions[index] = {
+      ...transactions[index],
+      title: transaction.title,
+      amount: transaction.amount,
+      category: transaction.category,
+      type: transaction.type,
+    };
+
+    await saveAllTransactions(transactions);
     console.log("Transaction updated:", id);
   } catch (error) {
     console.error("Error updating transaction:", error);
@@ -216,14 +228,21 @@ export const updateTransaction = async (
 // Xóa mềm giao dịch (soft delete - bất đồng bộ)
 export const deleteTransaction = async (id: number): Promise<void> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
+
+    const index = transactions.findIndex((t) => t.id === id);
+    if (index === -1) {
+      throw new Error("Transaction not found");
+    }
 
     const deletedAt = new Date().toLocaleString("vi-VN");
-    await database.runAsync(
-      "UPDATE transactions SET isDeleted = 1, deletedAt = ? WHERE id = ?",
-      [deletedAt, id]
-    );
+    transactions[index] = {
+      ...transactions[index],
+      isDeleted: 1,
+      deletedAt: deletedAt,
+    };
 
+    await saveAllTransactions(transactions);
     console.log("Transaction soft deleted:", id);
   } catch (error) {
     console.error("Error deleting transaction:", error);
@@ -234,13 +253,20 @@ export const deleteTransaction = async (id: number): Promise<void> => {
 // Khôi phục giao dịch đã xóa (bất đồng bộ)
 export const restoreTransaction = async (id: number): Promise<void> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
 
-    await database.runAsync(
-      "UPDATE transactions SET isDeleted = 0, deletedAt = NULL WHERE id = ?",
-      [id]
-    );
+    const index = transactions.findIndex((t) => t.id === id);
+    if (index === -1) {
+      throw new Error("Transaction not found");
+    }
 
+    transactions[index] = {
+      ...transactions[index],
+      isDeleted: 0,
+      deletedAt: undefined,
+    };
+
+    await saveAllTransactions(transactions);
     console.log("Transaction restored:", id);
   } catch (error) {
     console.error("Error restoring transaction:", error);
@@ -251,10 +277,11 @@ export const restoreTransaction = async (id: number): Promise<void> => {
 // Xóa vĩnh viễn giao dịch (hard delete - bất đồng bộ)
 export const permanentDeleteTransaction = async (id: number): Promise<void> => {
   try {
-    const database = await getDatabase();
+    const transactions = await getAllStoredTransactions();
 
-    await database.runAsync("DELETE FROM transactions WHERE id = ?", [id]);
+    const filteredTransactions = transactions.filter((t) => t.id !== id);
 
+    await saveAllTransactions(filteredTransactions);
     console.log("Transaction permanently deleted:", id);
   } catch (error) {
     console.error("Error permanently deleting transaction:", error);
