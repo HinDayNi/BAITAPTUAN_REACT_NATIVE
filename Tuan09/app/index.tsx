@@ -9,11 +9,33 @@ import {
   Modal,
   Alert,
   RefreshControl,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
+
 import * as DB from "../database/db";
+
+const COLORS = {
+  primary: "#6495ED",
+  primaryDark: "#304674",
+  primaryLight: "#EEF3FF",
+  secondary: "#98AFC7",
+  text: "#1F2937",
+  textLight: "#6B7280",
+  background: "#F9FAFB",
+  white: "#FFFFFF",
+  income: "#10B981",
+  incomeLight: "#D1FAE5",
+  expense: "#EF4444",
+  expenseLight: "#FEE2E2",
+  border: "#E5E7EB",
+  shadowColor: "rgba(0, 0, 0, 0.1)",
+};
 
 interface Transaction {
   id?: number;
@@ -21,7 +43,7 @@ interface Transaction {
   amount: number;
   category: string;
   createdAt: string;
-  type: "Thu" | "Chi"; // Thu = Income, Chi = Expense
+  type: "Thu" | "Chi";
 }
 
 const CATEGORIES = [
@@ -32,7 +54,6 @@ const CATEGORIES = [
   "Giải trí",
   "Khác",
 ];
-
 export default function Index() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -46,11 +67,9 @@ export default function Index() {
     "Tất cả"
   );
 
-  // Sử dụng useRef để quản lý input
   const titleInputRef = useRef<TextInput>(null);
   const amountInputRef = useRef<TextInput>(null);
 
-  // Khởi tạo database và load dữ liệu
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -65,7 +84,6 @@ export default function Index() {
     initializeApp();
   }, []);
 
-  // Load lại dữ liệu khi quay lại từ màn hình edit
   useFocusEffect(
     useCallback(() => {
       loadTransactions();
@@ -82,45 +100,38 @@ export default function Index() {
     }
   };
 
-  // Lọc giao dịch theo loại
   const getFilteredTransactions = () => {
-    if (filterType === "Tất cả") {
-      return transactions;
+    let filtered = transactions;
+
+    // Áp dụng bộ lọc Thu/Chi
+    if (filterType !== "Tất cả") {
+      filtered = filtered.filter((txn) => txn.type === filterType);
     }
-    return transactions.filter((txn) => txn.type === filterType);
+
+    // Áp dụng tìm kiếm
+    if (searchText.trim() !== "") {
+      const searchLower = searchText.trim().toLowerCase();
+      filtered = filtered.filter(
+        (txn) =>
+          txn.title.toLowerCase().includes(searchLower) ||
+          txn.category.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
   };
 
   const handleSearch = async (text: string) => {
     setSearchText(text);
-    try {
-      if (text.trim() === "") {
-        await loadTransactions();
-      } else {
-        const results = await DB.searchTransactions(text.trim());
-        setTransactions(results);
-      }
-    } catch (error) {
-      console.error("Error searching transactions:", error);
-      Alert.alert("Lỗi", "Không thể tìm kiếm");
-    }
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      if (searchText.trim() === "") {
-        await loadTransactions();
-      } else {
-        const results = await DB.searchTransactions(searchText.trim());
-        setTransactions(results);
-      }
-    } catch (error) {
-      console.error("Error refreshing transactions:", error);
-      Alert.alert("Lỗi", "Không thể làm mới dữ liệu");
-    } finally {
-      setRefreshing(false);
-    }
-  }, [searchText]);
+    await loadTransactions();
+    setSearchText(""); // Reset tìm kiếm khi làm mới
+    setFilterType("Tất cả"); // Reset bộ lọc khi làm mới
+    setRefreshing(false);
+  }, []);
 
   const addTransaction = async () => {
     if (!title.trim() || !amount.trim()) {
@@ -128,19 +139,18 @@ export default function Index() {
       return;
     }
 
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(amount.replace(/,/g, "")); // Xử lý nếu người dùng nhập có dấu phẩy
     if (isNaN(numAmount) || numAmount <= 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ");
       return;
     }
 
     try {
-      // Add new transaction only
       const newTransaction: Transaction = {
         title: title.trim(),
         amount: numAmount,
         category: selectedCategory,
-        createdAt: new Date().toLocaleString("vi-VN"),
+        createdAt: new Date().toISOString(),
         type: selectedType,
       };
       await DB.addTransaction(newTransaction);
@@ -154,6 +164,37 @@ export default function Index() {
     }
   };
 
+  const formatViDate = (value: string) => {
+    const opts: Intl.DateTimeFormatOptions = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+
+    const tryParse = (v: string) => {
+      const d1 = new Date(v);
+      if (!isNaN(d1.getTime())) return d1;
+      const m = v.match(
+        /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+      );
+      if (m) {
+        const day = Number(m[1]);
+        const mon = Number(m[2]) - 1;
+        const year = Number(m[3]);
+        const hour = Number(m[4] || 0);
+        const minute = Number(m[5] || 0);
+        const second = Number(m[6] || 0);
+        return new Date(year, mon, day, hour, minute, second);
+      }
+      return new Date();
+    };
+
+    const d = tryParse(value);
+    return d.toLocaleString("vi-VN", opts);
+  };
+
   const resetForm = () => {
     setTitle("");
     setAmount("");
@@ -161,7 +202,6 @@ export default function Index() {
     setSelectedType("Chi");
     setModalVisible(false);
 
-    // Clear input sử dụng useRef
     titleInputRef.current?.clear();
     amountInputRef.current?.clear();
   };
@@ -199,6 +239,10 @@ export default function Index() {
     Alert.alert("Tùy chọn", `Bạn muốn làm gì với "${transaction.title}"?`, [
       { text: "Hủy", style: "cancel" },
       {
+        text: "Chỉnh sửa",
+        onPress: () => editTransaction(transaction),
+      },
+      {
         text: "Xóa",
         style: "destructive",
         onPress: () => deleteTransaction(transaction.id),
@@ -207,7 +251,6 @@ export default function Index() {
   };
 
   const editTransaction = (transaction: Transaction) => {
-    // Chuyển sang màn hình edit với các tham số
     router.push({
       pathname: "/edit/[id]",
       params: {
@@ -243,61 +286,82 @@ export default function Index() {
   };
 
   const getCategoryIcon = (category: string) => {
-    const icons: { [key: string]: string } = {
-      "Ăn uống": "�️",
-      "Di chuyển": "�",
-      "Mua sắm": "�",
-      "Hóa đơn": "�",
-      "Giải trí": "�",
-      Khác: "�",
+    const icons: { [key: string]: { name: string; set: string } } = {
+      "Ăn uống": { name: "fast-food-outline", set: "Ionicons" },
+      "Di chuyển": { name: "car-outline", set: "Ionicons" },
+      "Mua sắm": { name: "basket-outline", set: "Ionicons" },
+      "Hóa đơn": { name: "receipt-outline", set: "Ionicons" },
+      "Giải trí": { name: "game-controller-outline", set: "Ionicons" },
+      Khác: { name: "cube-outline", set: "Ionicons" },
     };
-    return icons[category] || "�";
+    return icons[category] || { name: "cube-outline", set: "Ionicons" };
   };
 
-  const renderTransactionItem = ({ item }: { item: Transaction }) => (
-    <TouchableOpacity
-      style={styles.transactionItem}
-      onPress={() => editTransaction(item)}
-      onLongPress={() => showDeleteMenu(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.transactionLeft}>
-        <View style={styles.categoryIconContainer}>
-          <Text style={styles.categoryIconLarge}>
-            {getCategoryIcon(item.category)}
-          </Text>
-        </View>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>{item.title}</Text>
-          <View style={styles.transactionMeta}>
-            <Text style={styles.transactionCategory}>{item.category}</Text>
-            <Text style={styles.transactionDot}>•</Text>
-            <Text style={styles.transactionDate}>{item.createdAt}</Text>
+  const filteredTransactions = getFilteredTransactions();
+
+  const renderTransactionItem = ({ item }: { item: Transaction }) => {
+    const iconData = getCategoryIcon(item.category);
+    return (
+      <TouchableOpacity
+        style={styles.transactionItem}
+        onPress={() => editTransaction(item)}
+        onLongPress={() => showDeleteMenu(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.transactionLeft}>
+          <View style={styles.categoryIconContainer}>
+            {iconData.set === "Ionicons" ? (
+              <Ionicons
+                name={iconData.name as any}
+                size={24}
+                color={COLORS.text}
+              />
+            ) : (
+              <Feather
+                name={iconData.name as any}
+                size={24}
+                color={COLORS.text}
+              />
+            )}
+          </View>
+          <View style={styles.transactionInfo}>
+            <Text style={styles.transactionTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <View style={styles.transactionMeta}>
+              <Text style={styles.transactionCategory}>{item.category}</Text>
+              <Text style={styles.transactionDot}>•</Text>
+              <Text style={styles.transactionDate}>
+                {formatViDate(item.createdAt)}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
-      <View style={styles.transactionRight}>
-        <View
-          style={[
-            styles.amountBadge,
-            item.type === "Thu" ? styles.incomeBadge : styles.expenseBadge,
-          ]}
-        >
-          <Text style={styles.amountBadgeText}>
-            {item.type === "Thu" ? "📈" : "📉"}
+        <View style={styles.transactionRight}>
+          <Text
+            style={[
+              styles.transactionAmount,
+              item.type === "Thu" ? styles.incomeAmount : styles.expenseAmount,
+            ]}
+            numberOfLines={1}
+          >
+            {item.type === "Thu" ? "+" : "-"}₫
+            {item.amount.toLocaleString("vi-VN")}
+          </Text>
+          <Text
+            style={[
+              styles.amountTypeLabel,
+              item.type === "Thu"
+                ? styles.incomeTypeLabel
+                : styles.expenseTypeLabel,
+            ]}
+          >
+            {item.type === "Thu" ? "Thu" : "Chi"}
           </Text>
         </View>
-        <Text
-          style={[
-            styles.transactionAmount,
-            item.type === "Thu" ? styles.incomeAmount : styles.expenseAmount,
-          ]}
-        >
-          {item.type === "Thu" ? "+" : "-"}₫{item.amount.toLocaleString()}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -305,31 +369,39 @@ export default function Index() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => router.push("/settings")}
-        >
-          <Text style={styles.iconButtonText}>⚙️</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>EXPENSE TRACKER</Text>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.syncButton} onPress={onRefresh}>
-            <Text style={styles.syncButtonText}>⟲</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => router.push("/statistics")}
-          >
-            <Text style={styles.iconButtonText}>📊</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => router.push("/trash")}
-          >
-            <Text style={styles.iconButtonText}>🗑️</Text>
-          </TouchableOpacity>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>Xin chào!</Text>
+            <Text style={styles.subGreeting}>Quản lý chi tiêu của bạn</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/statistics")}
+            >
+              <Ionicons
+                name="stats-chart-outline"
+                size={24}
+                color={COLORS.white}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/trash")}
+            >
+              <Ionicons name="trash-outline" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/settings")}
+            >
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={COLORS.white}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -342,141 +414,173 @@ export default function Index() {
               styles.balanceAmount,
               getBalance() >= 0 ? styles.incomeAmount : styles.expenseAmount,
             ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            allowFontScaling
           >
-            {getBalance() >= 0 ? "+" : ""}₫
-            {Math.abs(getBalance()).toLocaleString()}
+            ₫{Math.abs(getBalance()).toLocaleString("vi-VN")}
           </Text>
         </View>
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <View style={styles.summaryIconContainer}>
-              <Text style={styles.summaryIcon}>↗</Text>
+            <View style={styles.summaryIconWrapper}>
+              <View style={styles.incomeIconBg}>
+                <Feather
+                  name="arrow-up-right"
+                  size={20}
+                  color={COLORS.income}
+                />
+              </View>
               <Text style={styles.summaryLabel}>Thu nhập</Text>
             </View>
             <Text style={[styles.summaryAmount, styles.incomeAmount]}>
-              +₫{getTotalIncome().toLocaleString()}
+              +₫{getTotalIncome().toLocaleString("vi-VN")}
             </Text>
           </View>
 
           <View style={styles.summaryDivider} />
 
           <View style={styles.summaryItem}>
-            <View style={styles.summaryIconContainer}>
-              <Text style={styles.summaryIcon}>↙</Text>
+            <View style={styles.summaryIconWrapper}>
+              <Feather
+                name="arrow-down-left"
+                size={20}
+                color={COLORS.expense}
+              />
               <Text style={styles.summaryLabel}>Chi tiêu</Text>
             </View>
             <Text style={[styles.summaryAmount, styles.expenseAmount]}>
-              -₫{getTotalExpense().toLocaleString()}
+              -₫{getTotalExpense().toLocaleString("vi-VN")}
             </Text>
           </View>
         </View>
 
         <Text style={styles.summaryCount}>
-          Tổng {getFilteredTransactions().length} giao dịch
+          Tổng {filteredTransactions.length} giao dịch
         </Text>
       </View>
 
       {/* Transaction List */}
       <View style={styles.listContainer}>
-        <View style={styles.searchHeader}>
-          <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
-        </View>
-
-        {/* Filter Tabs */}
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === "Tất cả" && styles.filterTabActive,
-            ]}
-            onPress={() => setFilterType("Tất cả")}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filterType === "Tất cả" && styles.filterTabTextActive,
-              ]}
-            >
-              Tất cả
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === "Thu" && styles.filterTabIncome,
-            ]}
-            onPress={() => setFilterType("Thu")}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filterType === "Thu" && styles.filterTabTextIncome,
-              ]}
-            >
-              Thu nhập
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === "Chi" && styles.filterTabExpense,
-            ]}
-            onPress={() => setFilterType("Chi")}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filterType === "Chi" && styles.filterTabTextExpense,
-              ]}
-            >
-              Chi tiêu
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={COLORS.textLight}
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm giao dịch..."
-            placeholderTextColor="#999"
+            placeholder="Tìm kiếm tiêu đề hoặc danh mục..."
+            placeholderTextColor={COLORS.textLight}
             value={searchText}
             onChangeText={handleSearch}
           />
           {searchText !== "" && (
             <TouchableOpacity onPress={() => handleSearch("")}>
-              <Text style={styles.clearIcon}>✕</Text>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={COLORS.textLight}
+                style={styles.clearIcon}
+              />
             </TouchableOpacity>
           )}
         </View>
 
-        {transactions.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>{searchText ? "�" : "�📊"}</Text>
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          {(["Tất cả", "Thu", "Chi"] as const).map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.filterTab,
+                filterType === type && styles.filterTabActive,
+              ]}
+              onPress={() => setFilterType(type)}
+            >
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filterType === type && styles.filterTabTextActive,
+                  filterType === "Thu" &&
+                    type === "Thu" && { color: COLORS.income },
+                  filterType === "Chi" &&
+                    type === "Chi" && { color: COLORS.expense },
+                ]}
+              >
+                {type === "Thu" ? (
+                  <Ionicons
+                    name="arrow-up-circle-outline"
+                    size={14}
+                    color={
+                      filterType === "Thu" ? COLORS.income : COLORS.textLight
+                    }
+                  />
+                ) : type === "Chi" ? (
+                  <Ionicons
+                    name="arrow-down-circle-outline"
+                    size={14}
+                    color={
+                      filterType === "Chi" ? COLORS.expense : COLORS.textLight
+                    }
+                  />
+                ) : null}{" "}
+                {type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {filteredTransactions.length === 0 ? (
+          <ScrollView
+            contentContainerStyle={styles.emptyContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[COLORS.primary]}
+                tintColor={COLORS.primary}
+              />
+            }
+          >
+            <Ionicons
+              name={searchText ? "alert-circle-outline" : "cash-outline"}
+              size={64}
+              color={COLORS.textLight}
+              style={styles.emptyIcon}
+            />
             <Text style={styles.emptyText}>
               {searchText ? "Không tìm thấy kết quả" : "Chưa có giao dịch nào"}
             </Text>
             <Text style={styles.emptySubtext}>
               {searchText
-                ? "Thử tìm kiếm với từ khóa khác"
+                ? "Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc"
                 : "Nhấn nút + để thêm giao dịch đầu tiên"}
             </Text>
-          </View>
+          </ScrollView>
         ) : (
           <FlatList
-            data={transactions}
+            data={filteredTransactions}
             renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id?.toString() || "0"}
+            keyExtractor={(item) =>
+              item.id?.toString() || new Date().getTime().toString()
+            }
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.flatListContent}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#6366f1"]}
-                tintColor="#6366f1"
+                colors={[COLORS.primary]}
+                tintColor={COLORS.primary}
                 title="Đang tải..."
-                titleColor="#666"
+                titleColor={COLORS.textLight}
               />
             }
           />
@@ -487,8 +591,9 @@ export default function Index() {
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => setModalVisible(true)}
+        activeOpacity={0.8}
       >
-        <Text style={styles.addButtonText}>+</Text>
+        <Ionicons name="add-outline" size={40} color={COLORS.white} />
       </TouchableOpacity>
 
       {/* Add/Edit Modal */}
@@ -496,112 +601,154 @@ export default function Index() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => {
-          resetForm();
-        }}
+        onRequestClose={resetForm}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Thêm giao dịch mới</Text>
-
-            <Text style={styles.inputLabel}>Loại</Text>
-            <View style={styles.typeContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  selectedType === "Thu" && styles.typeButtonIncome,
-                ]}
-                onPress={() => setSelectedType("Thu")}
-              >
-                <Text
-                  style={[
-                    styles.typeButtonText,
-                    selectedType === "Thu" && styles.typeButtonTextActive,
-                  ]}
-                >
-                  💰 Thu
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  selectedType === "Chi" && styles.typeButtonExpense,
-                ]}
-                onPress={() => setSelectedType("Chi")}
-              >
-                <Text
-                  style={[
-                    styles.typeButtonText,
-                    selectedType === "Chi" && styles.typeButtonTextActive,
-                  ]}
-                >
-                  💸 Chi
-                </Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Thêm giao dịch mới</Text>
+              <TouchableOpacity onPress={resetForm} style={styles.closeButton}>
+                <Ionicons
+                  name="close-outline"
+                  size={24}
+                  color={COLORS.textLight}
+                />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>Tiêu đề</Text>
-            <TextInput
-              ref={titleInputRef}
-              style={styles.input}
-              placeholder="VD: Ăn trưa tại nhà hàng"
-              placeholderTextColor="#999"
-              value={title}
-              onChangeText={setTitle}
-            />
-
-            <Text style={styles.inputLabel}>Số tiền (₫)</Text>
-            <TextInput
-              ref={amountInputRef}
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor="#999"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.inputLabel}>Danh mục</Text>
-            <View style={styles.categoryContainer}>
-              {CATEGORIES.map((category) => (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Type Selection */}
+              <Text style={styles.inputLabel}>Loại giao dịch</Text>
+              <View style={styles.typeContainer}>
                 <TouchableOpacity
-                  key={category}
                   style={[
-                    styles.categoryChip,
-                    selectedCategory === category && styles.categoryChipActive,
+                    styles.typeButton,
+                    selectedType === "Thu" && styles.typeButtonIncome,
                   ]}
-                  onPress={() => setSelectedCategory(category)}
+                  onPress={() => setSelectedType("Thu")}
                 >
-                  <Text style={styles.categoryChipIcon}>
-                    {getCategoryIcon(category)}
-                  </Text>
                   <Text
                     style={[
-                      styles.categoryChipText,
-                      selectedCategory === category &&
-                        styles.categoryChipTextActive,
+                      styles.typeButtonText,
+                      selectedType === "Thu"
+                        ? styles.typeButtonTextIncome
+                        : null,
                     ]}
                   >
-                    {category}
+                    <Ionicons name="cash-outline" size={16} /> Thu nhập
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    selectedType === "Chi" && styles.typeButtonExpense,
+                  ]}
+                  onPress={() => setSelectedType("Chi")}
+                >
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      selectedType === "Chi"
+                        ? styles.typeButtonTextExpense
+                        : null,
+                    ]}
+                  >
+                    <Ionicons name="card-outline" size={16} /> Chi tiêu
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
+              {/* Inputs */}
+              <Text style={styles.inputLabel}>Tiêu đề</Text>
+              <TextInput
+                ref={titleInputRef}
+                style={styles.input}
+                placeholder="VD: Ăn trưa tại nhà hàng"
+                placeholderTextColor={COLORS.textLight}
+                value={title}
+                onChangeText={setTitle}
+              />
+
+              <Text style={styles.inputLabel}>Số tiền (₫)</Text>
+              <TextInput
+                ref={amountInputRef}
+                style={styles.input}
+                placeholder="0"
+                placeholderTextColor={COLORS.textLight}
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+              />
+
+              {/* Category Chips */}
+              <Text style={styles.inputLabel}>Danh mục</Text>
+              <View style={styles.categoryContainer}>
+                {CATEGORIES.map((category) => {
+                  const iconData = getCategoryIcon(category);
+                  return (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.categoryChip,
+                        selectedCategory === category &&
+                          styles.categoryChipActive,
+                      ]}
+                      onPress={() => setSelectedCategory(category)}
+                      activeOpacity={0.7}
+                    >
+                      {iconData.set === "Ionicons" ? (
+                        <Ionicons
+                          name={iconData.name as any}
+                          size={18}
+                          color={
+                            selectedCategory === category
+                              ? COLORS.primary
+                              : COLORS.textLight
+                          }
+                          style={styles.categoryChipIcon}
+                        />
+                      ) : (
+                        <Feather
+                          name={iconData.name as any}
+                          size={18}
+                          color={
+                            selectedCategory === category
+                              ? COLORS.primary
+                              : COLORS.textLight
+                          }
+                          style={styles.categoryChipIcon}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          selectedCategory === category &&
+                            styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Modal Buttons */}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  resetForm();
-                }}
+                onPress={resetForm}
+                activeOpacity={0.8}
               >
                 <Text style={styles.cancelButtonText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={addTransaction}
+                activeOpacity={0.8}
               >
-                <Text style={styles.saveButtonText}>Lưu</Text>
+                <Text style={styles.saveButtonText}>Lưu giao dịch</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -614,143 +761,163 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FBF9",
+    backgroundColor: COLORS.background,
   },
+  flatListContent: {
+    paddingBottom: 100,
+  },
+  // --- Header ---
   header: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  headerTop: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-    backgroundColor: "#8FD6AA",
-  },
-  headerLeft: {
-    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 20,
   },
-  headerCenter: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  greeting: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: COLORS.white,
+    marginBottom: 4,
   },
-  headerIcon: {
-    fontSize: 28,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: 1.2,
-    textAlign: "center",
-    fontFamily: "System",
+  subGreeting: {
+    fontSize: 14,
+    color: COLORS.primaryLight,
   },
   headerRight: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
   },
-  menuButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
-  menuButtonText: {
+  iconButtonText: {
+    fontSize: 20,
+    color: COLORS.white,
+  },
+  // --- Summary Card ---
+  summaryCard: {
+    backgroundColor: COLORS.white,
+    marginHorizontal: 20,
+    marginTop: -30, // Tạo hiệu ứng nổi
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 24,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  balanceContainer: {
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  balanceLabel: {
     fontSize: 12,
-    color: "#fff",
+    color: COLORS.textLight,
+    marginBottom: 6,
     fontWeight: "600",
   },
-  summaryCard: {
-    backgroundColor: "#FFFFFF",
-    margin: 16,
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E9F2EC",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+  balanceAmount: {
+    fontSize: 32,
+    fontWeight: "900",
+    letterSpacing: -1,
+    lineHeight: 36,
   },
   summaryRow: {
     flexDirection: "row",
-    width: "100%",
-    marginBottom: 16,
+    marginBottom: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   summaryItem: {
     flex: 1,
     alignItems: "center",
+    gap: 6,
+  },
+  summaryIconWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 6,
+  },
+  incomeIconBg: {
+    // Không cần nền riêng nếu icon đã có màu
+    // backgroundColor: COLORS.incomeLight,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  expenseIconBg: {
+    // Không cần nền riêng nếu icon đã có màu
+    // backgroundColor: COLORS.expenseLight,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  summaryIcon: {
+    fontSize: 18,
+    fontWeight: "bold",
   },
   summaryDivider: {
     width: 1,
-    backgroundColor: "#e5e5e5",
-    marginHorizontal: 16,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 10,
   },
   summaryLabel: {
-    fontSize: 11,
-    color: "#6C7A72",
-    marginBottom: 6,
-    textTransform: "uppercase",
-    fontWeight: "600",
-    letterSpacing: 0.8,
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: "500",
   },
   summaryAmount: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 4,
-  },
-  balanceContainer: {
-    width: "100%",
-    alignItems: "center",
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    marginBottom: 12,
-  },
-  balanceLabel: {
-    fontSize: 12,
-    color: "#5B6B6A",
-    marginBottom: 8,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  balanceAmount: {
-    fontSize: 28,
-    fontWeight: "800",
-    letterSpacing: 0.5,
   },
   incomeAmount: {
-    color: "#65B57E",
+    color: COLORS.income,
   },
   expenseAmount: {
-    color: "#D44A4A",
+    color: COLORS.expense,
   },
   summaryCount: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: 11,
+    color: COLORS.textLight,
     textAlign: "center",
+    marginTop: 8,
   },
+  // --- Transaction List & Search/Filter ---
   listContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  searchHeader: {
-    marginBottom: 12,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
-    color: "#1F2E25",
+    color: COLORS.text,
     marginBottom: 16,
   },
   filterContainer: {
@@ -761,269 +928,271 @@ const styles = StyleSheet.create({
   filterTab: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "#fff",
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: "#E8F1EA",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: COLORS.border,
   },
   filterTabActive: {
-    backgroundColor: "#7FCF9A",
-    borderColor: "#65B57E",
-  },
-  filterTabIncome: {
-    backgroundColor: "#BEECC9",
-    borderColor: "#BEECC9",
-  },
-  filterTabExpense: {
-    backgroundColor: "#F9C3C3",
-    borderColor: "#F9C3C3",
+    backgroundColor: COLORS.primaryLight,
+    borderColor: COLORS.primary,
   },
   filterTabText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#6C7A72",
+    color: COLORS.textLight,
   },
   filterTabTextActive: {
-    color: "#fff",
-  },
-  filterTabTextIncome: {
-    color: "#1F2E25",
-  },
-  filterTabTextExpense: {
-    color: "#1F2E25",
+    color: COLORS.primaryDark,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 25,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    marginBottom: 20,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#E8F1EA",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    borderColor: COLORS.border,
   },
   searchIcon: {
-    fontSize: 18,
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: COLORS.text,
+    paddingVertical: 0,
   },
   clearIcon: {
-    fontSize: 20,
-    color: "#999",
-    paddingHorizontal: 8,
+    color: COLORS.textLight,
+    paddingLeft: 8,
   },
+  // --- Transaction Item ---
   transactionItem: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.white,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     marginBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    borderLeftWidth: 6,
+    borderColor: COLORS.border, // Sẽ được override
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   transactionLeft: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    flex: 2,
+    marginRight: 10,
   },
-  typeIndicator: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
-  },
-  incomeIndicator: {
-    backgroundColor: "#E8F5E8",
-  },
-  expenseIndicator: {
-    backgroundColor: "#FFE8E8",
-  },
-  typeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#333",
   },
   transactionInfo: {
     flex: 1,
   },
   transactionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: COLORS.text,
     marginBottom: 4,
+  },
+  transactionMeta: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   transactionCategory: {
     fontSize: 12,
-    color: "#999",
+    color: COLORS.textLight,
+    fontWeight: "500",
+  },
+  transactionDot: {
+    fontSize: 12,
+    color: COLORS.border,
+    marginHorizontal: 6,
+  },
+  transactionDate: {
+    fontSize: 11,
+    color: COLORS.textLight,
   },
   transactionRight: {
     alignItems: "flex-end",
+    flex: 1,
   },
   transactionAmount: {
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontWeight: "700",
+    marginBottom: 4,
   },
-  actionButtons: {
-    flexDirection: "row",
-    gap: 8,
+  amountTypeLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  editButton: {
-    padding: 4,
+  incomeTypeLabel: {
+    backgroundColor: COLORS.incomeLight,
+    color: COLORS.income,
   },
-  editButtonText: {
-    fontSize: 16,
+  expenseTypeLabel: {
+    backgroundColor: COLORS.expenseLight,
+    color: COLORS.expense,
   },
-  deleteButton: {
-    padding: 4,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-  },
+  // --- Empty State ---
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
   },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#E8F1EA",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
   emptyIcon: {
-    fontSize: 36,
-    color: "#6C7A72",
+    fontSize: 64,
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2E25",
+    fontWeight: "600",
+    color: COLORS.textLight,
     marginBottom: 8,
-    textAlign: "center",
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#6C7A72",
+    color: COLORS.textLight,
     textAlign: "center",
-    lineHeight: 20,
+    paddingHorizontal: 40,
   },
+  // --- Add Button ---
   addButton: {
     position: "absolute",
     right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#65B57E",
+    bottom: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
   },
   addButtonText: {
-    fontSize: 32,
-    color: "#fff",
+    fontSize: 36,
+    color: COLORS.white,
     fontWeight: "300",
   },
+  // --- Modal ---
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: 24,
-    maxHeight: "85%",
+    maxHeight: "90%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 16,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 24,
-    textAlign: "center",
+    fontSize: 22,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: COLORS.textLight,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: COLORS.text,
     marginBottom: 8,
-    marginTop: 8,
+    marginTop: 16,
   },
   input: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: "#333",
+    color: COLORS.text,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+  // --- Type/Category Selection ---
   typeContainer: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   typeButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 2,
-    borderColor: "#f5f5f5",
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
     alignItems: "center",
   },
   typeButtonIncome: {
-    backgroundColor: "#E8F5E8",
-    borderColor: "#7FCF9A",
+    backgroundColor: COLORS.incomeLight,
+    borderColor: COLORS.income,
   },
   typeButtonExpense: {
-    backgroundColor: "#FFE8E8",
-    borderColor: "#F26C6C",
+    backgroundColor: COLORS.expenseLight,
+    borderColor: COLORS.expense,
   },
   typeButtonText: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: 15,
+    color: COLORS.textLight,
     fontWeight: "600",
   },
-  typeButtonTextActive: {
-    color: "#333",
+  typeButtonTextIncome: {
+    color: COLORS.income,
+  },
+  typeButtonTextExpense: {
+    color: COLORS.expense,
   },
   categoryContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 10,
     marginBottom: 24,
+    marginTop: 8,
   },
   categoryChip: {
     flexDirection: "row",
@@ -1031,135 +1200,57 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 2,
-    borderColor: "#f5f5f5",
+    backgroundColor: COLORS.background,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
   },
   categoryChipActive: {
-    backgroundColor: "#E8F5E8",
-    borderColor: "#7FCF9A",
+    backgroundColor: COLORS.primaryLight,
+    borderColor: COLORS.primary,
   },
   categoryChipIcon: {
-    fontSize: 18,
     marginRight: 6,
   },
   categoryChipText: {
-    fontSize: 13,
-    color: "#666",
+    fontSize: 14,
+    color: COLORS.textLight,
     fontWeight: "500",
   },
   categoryChipTextActive: {
-    color: "#65B57E",
+    color: COLORS.primaryDark,
     fontWeight: "600",
   },
+  // --- Modal Buttons ---
   modalButtons: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
   },
   modalButton: {
     flex: 1,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.border,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#666",
+    color: COLORS.textLight,
   },
   saveButton: {
-    backgroundColor: "#65B57E",
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
-  },
-  syncButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  syncButtonText: {
-    fontSize: 18,
-    color: "#fff",
-    fontWeight: "600",
-  },
-  categoryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#E8F5E8",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  categoryIconLarge: {
-    fontSize: 24,
-  },
-  transactionMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  transactionDot: {
-    fontSize: 12,
-    color: "#999",
-    marginHorizontal: 6,
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: "#999",
-  },
-  amountBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  incomeBadge: {
-    backgroundColor: "#E8F5E8",
-  },
-  expenseBadge: {
-    backgroundColor: "#FFE8E8",
-  },
-  amountBadgeText: {
-    fontSize: 16,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  iconButtonText: {
-    fontSize: 20,
-  },
-  summaryIconContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  summaryIcon: {
-    fontSize: 14,
-    marginRight: 6,
-    color: "#6C7A72",
+    color: COLORS.white,
   },
 });
