@@ -12,68 +12,97 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
-interface Expense {
+interface Transaction {
   id: string;
   title: string;
   amount: number;
   category: string;
-  date: string;
+  createdAt: string;
+  type: "Thu" | "Chi"; // Thu = Income, Chi = Expense
 }
 
 const CATEGORIES = [
-  "Food",
-  "Transport",
-  "Shopping",
-  "Bills",
-  "Entertainment",
-  "Other",
+  "Ăn uống",
+  "Di chuyển",
+  "Mua sắm",
+  "Hóa đơn",
+  "Giải trí",
+  "Khác",
 ];
 
 export default function Index() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([
+    {
+      id: "1",
+      title: "Lương tháng 10",
+      amount: 15000000,
+      category: "Khác",
+      createdAt: "30/10/2025, 09:00:00",
+      type: "Thu",
+    },
+    {
+      id: "2",
+      title: "Mua sắm Lotte Mart",
+      amount: 850000,
+      category: "Mua sắm",
+      createdAt: "31/10/2025, 14:30:00",
+      type: "Chi",
+    },
+    {
+      id: "3",
+      title: "Tiền điện tháng 10",
+      amount: 450000,
+      category: "Hóa đơn",
+      createdAt: "1/11/2025, 08:15:00",
+      type: "Chi",
+    },
+  ]);
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
+  const [selectedType, setSelectedType] = useState<"Thu" | "Chi">("Chi");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const addExpense = () => {
+  const addTransaction = () => {
     if (!title.trim() || !amount.trim()) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      Alert.alert("Error", "Please enter a valid amount");
+      Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ");
       return;
     }
 
     if (editingId) {
-      // Update existing expense
-      setExpenses(
-        expenses.map((exp) =>
-          exp.id === editingId
+      // Update existing transaction
+      setTransactions(
+        transactions.map((txn) =>
+          txn.id === editingId
             ? {
-                ...exp,
+                ...txn,
                 title: title.trim(),
                 amount: numAmount,
                 category: selectedCategory,
+                type: selectedType,
               }
-            : exp
+            : txn
         )
       );
       setEditingId(null);
     } else {
-      // Add new expense
-      const newExpense: Expense = {
+      // Add new transaction
+      const newTransaction: Transaction = {
         id: Date.now().toString(),
         title: title.trim(),
         amount: numAmount,
         category: selectedCategory,
-        date: new Date().toLocaleDateString(),
+        createdAt: new Date().toLocaleString("vi-VN"),
+        type: selectedType,
       };
-      setExpenses([newExpense, ...expenses]);
+      setTransactions([newTransaction, ...transactions]);
     }
 
     resetForm();
@@ -83,75 +112,100 @@ export default function Index() {
     setTitle("");
     setAmount("");
     setSelectedCategory(CATEGORIES[0]);
+    setSelectedType("Chi");
     setModalVisible(false);
   };
 
-  const deleteExpense = (id: string) => {
-    Alert.alert(
-      "Delete Expense",
-      "Are you sure you want to delete this expense?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => setExpenses(expenses.filter((exp) => exp.id !== id)),
-        },
-      ]
-    );
+  const deleteTransaction = (id: string) => {
+    Alert.alert("Xóa giao dịch", "Bạn có chắc chắn muốn xóa giao dịch này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () =>
+          setTransactions(transactions.filter((txn) => txn.id !== id)),
+      },
+    ]);
   };
 
-  const editExpense = (expense: Expense) => {
-    setTitle(expense.title);
-    setAmount(expense.amount.toString());
-    setSelectedCategory(expense.category);
-    setEditingId(expense.id);
+  const editTransaction = (transaction: Transaction) => {
+    setTitle(transaction.title);
+    setAmount(transaction.amount.toString());
+    setSelectedCategory(transaction.category);
+    setSelectedType(transaction.type);
+    setEditingId(transaction.id);
     setModalVisible(true);
   };
 
-  const getTotalExpenses = () => {
-    return expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const getBalance = () => {
+    return transactions.reduce((sum, txn) => {
+      return txn.type === "Thu" ? sum + txn.amount : sum - txn.amount;
+    }, 0);
+  };
+
+  const getTotalIncome = () => {
+    return transactions
+      .filter((txn) => txn.type === "Thu")
+      .reduce((sum, txn) => sum + txn.amount, 0);
+  };
+
+  const getTotalExpense = () => {
+    return transactions
+      .filter((txn) => txn.type === "Chi")
+      .reduce((sum, txn) => sum + txn.amount, 0);
   };
 
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: string } = {
-      Food: "🍔",
-      Transport: "🚗",
-      Shopping: "🛍️",
-      Bills: "📄",
-      Entertainment: "🎬",
-      Other: "📦",
+      "Ăn uống": "🍔",
+      "Di chuyển": "🚗",
+      "Mua sắm": "🛍️",
+      "Hóa đơn": "📄",
+      "Giải trí": "🎬",
+      Khác: "📦",
     };
     return icons[category] || "📦";
   };
 
-  const renderExpenseItem = ({ item }: { item: Expense }) => (
-    <View style={styles.expenseItem}>
-      <View style={styles.expenseLeft}>
-        <Text style={styles.categoryIcon}>
-          {getCategoryIcon(item.category)}
-        </Text>
-        <View style={styles.expenseInfo}>
-          <Text style={styles.expenseTitle}>{item.title}</Text>
-          <Text style={styles.expenseCategory}>
-            {item.category} • {item.date}
+  const renderTransactionItem = ({ item }: { item: Transaction }) => (
+    <View style={styles.transactionItem}>
+      <View style={styles.transactionLeft}>
+        <View
+          style={[
+            styles.typeIndicator,
+            item.type === "Thu"
+              ? styles.incomeIndicator
+              : styles.expenseIndicator,
+          ]}
+        >
+          <Text style={styles.typeText}>{item.type}</Text>
+        </View>
+        <View style={styles.transactionInfo}>
+          <Text style={styles.transactionTitle}>{item.title}</Text>
+          <Text style={styles.transactionCategory}>
+            {item.category} • {item.createdAt}
           </Text>
         </View>
       </View>
-      <View style={styles.expenseRight}>
-        <Text style={styles.expenseAmount}>
-          ₫{item.amount.toLocaleString()}
+      <View style={styles.transactionRight}>
+        <Text
+          style={[
+            styles.transactionAmount,
+            item.type === "Thu" ? styles.incomeAmount : styles.expenseAmount,
+          ]}
+        >
+          {item.type === "Thu" ? "+" : "-"}₫{item.amount.toLocaleString()}
         </Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => editExpense(item)}
+            onPress={() => editTransaction(item)}
           >
             <Text style={styles.editButtonText}>✏️</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => deleteExpense(item.id)}
+            onPress={() => deleteTransaction(item.id)}
           >
             <Text style={styles.deleteButtonText}>🗑️</Text>
           </TouchableOpacity>
@@ -166,35 +220,55 @@ export default function Index() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>EXPENSE TRACKER</Text>
+        <Text style={styles.headerTitle}>QUẢN LÝ THU CHI</Text>
       </View>
 
       {/* Total Summary */}
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Total Expenses</Text>
-        <Text style={styles.summaryAmount}>
-          ₫{getTotalExpenses().toLocaleString()}
-        </Text>
-        <Text style={styles.summaryCount}>
-          {expenses.length} transaction{expenses.length !== 1 ? "s" : ""}
-        </Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Thu</Text>
+            <Text style={[styles.summaryAmount, styles.incomeAmount]}>
+              +₫{getTotalIncome().toLocaleString()}
+            </Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Chi</Text>
+            <Text style={[styles.summaryAmount, styles.expenseAmount]}>
+              -₫{getTotalExpense().toLocaleString()}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.balanceContainer}>
+          <Text style={styles.balanceLabel}>Số dư</Text>
+          <Text
+            style={[
+              styles.balanceAmount,
+              getBalance() >= 0 ? styles.incomeAmount : styles.expenseAmount,
+            ]}
+          >
+            ₫{getBalance().toLocaleString()}
+          </Text>
+        </View>
+        <Text style={styles.summaryCount}>{transactions.length} giao dịch</Text>
       </View>
 
-      {/* Expense List */}
+      {/* Transaction List */}
       <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        {expenses.length === 0 ? (
+        <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+        {transactions.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyText}>No expenses yet</Text>
+            <Text style={styles.emptyText}>Chưa có giao dịch nào</Text>
             <Text style={styles.emptySubtext}>
-              Tap the + button to add your first expense
+              Nhấn nút + để thêm giao dịch đầu tiên
             </Text>
           </View>
         ) : (
           <FlatList
-            data={expenses}
-            renderItem={renderExpenseItem}
+            data={transactions}
+            renderItem={renderTransactionItem}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
           />
@@ -222,19 +296,55 @@ export default function Index() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {editingId ? "Edit Expense" : "Add New Expense"}
+              {editingId ? "Chỉnh sửa giao dịch" : "Thêm giao dịch mới"}
             </Text>
 
-            <Text style={styles.inputLabel}>Title</Text>
+            <Text style={styles.inputLabel}>Loại</Text>
+            <View style={styles.typeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.typeButton,
+                  selectedType === "Thu" && styles.typeButtonIncome,
+                ]}
+                onPress={() => setSelectedType("Thu")}
+              >
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    selectedType === "Thu" && styles.typeButtonTextActive,
+                  ]}
+                >
+                  💰 Thu
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.typeButton,
+                  selectedType === "Chi" && styles.typeButtonExpense,
+                ]}
+                onPress={() => setSelectedType("Chi")}
+              >
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    selectedType === "Chi" && styles.typeButtonTextActive,
+                  ]}
+                >
+                  💸 Chi
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>Tiêu đề</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g., Lunch at restaurant"
+              placeholder="VD: Ăn trưa tại nhà hàng"
               placeholderTextColor="#999"
               value={title}
               onChangeText={setTitle}
             />
 
-            <Text style={styles.inputLabel}>Amount (₫)</Text>
+            <Text style={styles.inputLabel}>Số tiền (₫)</Text>
             <TextInput
               style={styles.input}
               placeholder="0"
@@ -244,7 +354,7 @@ export default function Index() {
               keyboardType="numeric"
             />
 
-            <Text style={styles.inputLabel}>Category</Text>
+            <Text style={styles.inputLabel}>Danh mục</Text>
             <View style={styles.categoryContainer}>
               {CATEGORIES.map((category) => (
                 <TouchableOpacity
@@ -279,14 +389,14 @@ export default function Index() {
                   resetForm();
                 }}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={addExpense}
+                onPress={addTransaction}
               >
                 <Text style={styles.saveButtonText}>
-                  {editingId ? "Update" : "Save"}
+                  {editingId ? "Cập nhật" : "Lưu"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -321,29 +431,68 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: "#fff",
     margin: 16,
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
-    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
+  summaryRow: {
+    flexDirection: "row",
+    width: "100%",
+    marginBottom: 16,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: "#e5e5e5",
+    marginHorizontal: 16,
+  },
   summaryLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    fontWeight: "600",
+  },
+  summaryAmount: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  balanceContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e5e5",
+    marginBottom: 12,
+  },
+  balanceLabel: {
     fontSize: 14,
     color: "#666",
     marginBottom: 8,
+    fontWeight: "600",
   },
-  summaryAmount: {
-    fontSize: 36,
+  balanceAmount: {
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#6366f1",
-    marginBottom: 4,
+  },
+  incomeAmount: {
+    color: "#10b981",
+  },
+  expenseAmount: {
+    color: "#ef4444",
   },
   summaryCount: {
     fontSize: 12,
     color: "#999",
+    textAlign: "center",
   },
   listContainer: {
     flex: 1,
@@ -355,7 +504,7 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 12,
   },
-  expenseItem: {
+  transactionItem: {
     backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
@@ -369,35 +518,47 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  expenseLeft: {
+  transactionLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
-  categoryIcon: {
-    fontSize: 32,
+  typeIndicator: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
     marginRight: 12,
   },
-  expenseInfo: {
+  incomeIndicator: {
+    backgroundColor: "#d1fae5",
+  },
+  expenseIndicator: {
+    backgroundColor: "#fee2e2",
+  },
+  typeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#333",
+  },
+  transactionInfo: {
     flex: 1,
   },
-  expenseTitle: {
+  transactionTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
     marginBottom: 4,
   },
-  expenseCategory: {
+  transactionCategory: {
     fontSize: 12,
     color: "#999",
   },
-  expenseRight: {
+  transactionRight: {
     alignItems: "flex-end",
   },
-  expenseAmount: {
+  transactionAmount: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#ef4444",
     marginBottom: 8,
   },
   actionButtons: {
@@ -491,6 +652,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     marginBottom: 8,
+  },
+  typeContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  typeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 2,
+    borderColor: "#f5f5f5",
+    alignItems: "center",
+  },
+  typeButtonIncome: {
+    backgroundColor: "#d1fae5",
+    borderColor: "#10b981",
+  },
+  typeButtonExpense: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#ef4444",
+  },
+  typeButtonText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "600",
+  },
+  typeButtonTextActive: {
+    color: "#333",
   },
   categoryContainer: {
     flexDirection: "row",
