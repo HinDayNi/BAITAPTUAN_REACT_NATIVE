@@ -10,14 +10,17 @@ import {
   Alert,
   TextInput,
   Modal,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import axios from "axios";
 import {
   initDatabase,
   getTodos,
+  addTodo,
+  updateTodo,
   deleteTodo,
-  updateTodoTitle,
-  execSqlAsync, // dùng để insert khi add
+  openDB,
 } from "../database/db";
 
 export default function App() {
@@ -25,13 +28,14 @@ export default function App() {
   const [ok, setOk] = useState<boolean | null>(null);
   const [todos, setTodos] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Modal state (dùng chung cho Add + Edit)
+  // Modal state
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalTitleValue, setModalTitleValue] = useState("");
-  const [editId, setEditId] = useState<number | null>(null); // null -> add mode
+  const [editingTodo, setEditingTodo] = useState<any | null>(null);
+  const [titleInput, setTitleInput] = useState("");
 
-  // Load todos
+  // ====================== LOAD TODOS ======================
   const loadTodos = useCallback(async () => {
     try {
       await initDatabase();
@@ -43,6 +47,7 @@ export default function App() {
       setOk(false);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -50,7 +55,43 @@ export default function App() {
     loadTodos();
   }, [loadTodos]);
 
-  // Delete with confirm
+  // ====================== PULL-TO-REFRESH ======================
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadTodos();
+  }, [loadTodos]);
+
+  // ====================== MODAL: ADD / EDIT ======================
+  const openModal = useCallback((todo?: any) => {
+    if (todo) {
+      setEditingTodo(todo);
+      setTitleInput(todo.title);
+    } else {
+      setEditingTodo(null);
+      setTitleInput("");
+    }
+    setModalVisible(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!titleInput.trim()) {
+      Alert.alert("⚠️ Lỗi", "Vui lòng nhập tiêu đề công việc!");
+      return;
+    }
+    try {
+      if (editingTodo) {
+        await updateTodo({ ...editingTodo, title: titleInput });
+      } else {
+        await addTodo(titleInput);
+      }
+      setModalVisible(false);
+      await loadTodos();
+    } catch (e) {
+      console.error("❌ Save error:", e);
+    }
+  }, [editingTodo, titleInput, loadTodos]);
+
+  // ====================== DELETE ======================
   const handleDelete = useCallback(
     (id: number) => {
       Alert.alert("Xác nhận xóa", "Bạn có chắc muốn xóa công việc này không?", [
@@ -72,54 +113,52 @@ export default function App() {
     [loadTodos]
   );
 
-  // Open add modal
-  const openAddModal = () => {
-    setEditId(null);
-    setModalTitleValue("");
-    setModalVisible(true);
-  };
-
-  // Open edit modal
-  const openEditModal = (item: any) => {
-    setEditId(item.id);
-    setModalTitleValue(item.title);
-    setModalVisible(true);
-  };
-
-  // Save (add or edit)
-  const handleSaveModal = async () => {
-    if (!modalTitleValue.trim()) {
-      Alert.alert("Lỗi", "Tiêu đề không được để trống!");
-      return;
-    }
-    try {
-      if (editId === null) {
-        // add
-        await execSqlAsync(
-          "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
-          [modalTitleValue.trim(), 0, Date.now()]
-        );
-      } else {
-        // update
-        await updateTodoTitle(editId, modalTitleValue.trim());
-      }
-      setModalVisible(false);
-      setModalTitleValue("");
-      setEditId(null);
-      await loadTodos();
-    } catch (e) {
-      console.error("❌ Save modal error:", e);
-      Alert.alert("Lỗi", "Lưu không thành công. Xem console.");
-    }
-  };
-
-  // Real-time filter
+  // ====================== SEARCH FILTER ======================
   const filteredTodos = useMemo(() => {
     if (!search.trim()) return todos;
     const lower = search.toLowerCase();
     return todos.filter((t) => t.title.toLowerCase().includes(lower));
   }, [todos, search]);
 
+  // ====================== FETCH + MERGE API ======================
+  const syncFromApi = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        "https://jsonplaceholder.typicode.com/todos?_limit=10"
+      );
+      const apiTodos = res.data.map((t: any) => ({
+        title: t.title,
+        done: t.completed ? 1 : 0,
+        created_at: Date.now(),
+      }));
+
+      const db = await openDB();
+
+      for (const todo of apiTodos) {
+        const existing = await db.getFirstAsync<{ count: number }>(
+          "SELECT COUNT(*) as count FROM todos WHERE title = ?",
+          [todo.title]
+        );
+        if (!existing || existing.count === 0) {
+          await db.runAsync(
+            "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
+            [todo.title, todo.done, todo.created_at]
+          );
+        }
+      }
+
+      Alert.alert("✅ Thành công", "Đã đồng bộ dữ liệu từ API!");
+      await loadTodos();
+    } catch (e) {
+      console.error("❌ Sync error:", e);
+      Alert.alert("❌ Lỗi", "Không thể kết nối hoặc đồng bộ dữ liệu từ API!");
+    } finally {
+      setLoading(false);
+    }
+  }, [loadTodos]);
+
+  // ====================== UI ======================
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -132,7 +171,7 @@ export default function App() {
           <>
             <Text style={styles.title}>📋 Danh sách công việc</Text>
 
-            {/* Search */}
+            {/* 🔍 Ô tìm kiếm */}
             <TextInput
               style={styles.searchInput}
               placeholder="🔍 Tìm kiếm công việc..."
@@ -140,87 +179,70 @@ export default function App() {
               onChangeText={setSearch}
             />
 
+            {/* 🔘 Thêm + Đồng bộ */}
+            <View style={styles.buttonRow}>
+              <Button title="➕ Thêm" onPress={() => openModal()} />
+              <Button title="🌐 Đồng bộ API" onPress={syncFromApi} />
+            </View>
+
+            {/* 🔹 Danh sách công việc */}
             {filteredTodos.length === 0 ? (
               <Text style={styles.empty}>Không có kết quả phù hợp</Text>
             ) : (
               <FlatList
                 data={filteredTodos}
                 keyExtractor={(item) => item.id.toString()}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                  />
+                }
                 renderItem={({ item }) => (
                   <View style={styles.todoItem}>
-                    <Text
-                      style={[
-                        styles.todoText,
-                        item.done ? styles.doneText : null,
-                      ]}
+                    <TouchableOpacity
+                      onPress={() => openModal(item)}
+                      style={{ flex: 1 }}
                     >
-                      {item.title}
-                    </Text>
-
-                    <View style={styles.actions}>
-                      <TouchableOpacity
-                        onPress={() => openEditModal(item)}
+                      <Text
                         style={[
-                          styles.actionButton,
-                          { backgroundColor: "#1976D2" },
+                          styles.todoText,
+                          item.done ? styles.doneText : null,
                         ]}
                       >
-                        <Text style={{ color: "white" }}>Sửa</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => handleDelete(item.id)}
-                        style={[
-                          styles.actionButton,
-                          { backgroundColor: "#D32F2F" },
-                        ]}
-                      >
-                        <Text style={{ color: "white" }}>Xóa</Text>
-                      </TouchableOpacity>
-                    </View>
+                        {item.title}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(item.id)}
+                      style={styles.deleteButton}
+                    >
+                      <Text style={{ color: "white" }}>Xóa</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               />
             )}
 
-            <View style={{ height: 16 }} />
-
-            <Button title="🔄 Tải lại" onPress={loadTodos} />
-
-            {/* Floating Add Button */}
-            <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-              <Text style={styles.addText}>＋</Text>
-            </TouchableOpacity>
-
-            {/* Shared Modal (Add / Edit) */}
-            <Modal visible={modalVisible} animationType="slide" transparent>
-              <View style={styles.modalOverlay}>
+            {/* 🪄 Modal thêm/sửa */}
+            <Modal visible={modalVisible} transparent animationType="slide">
+              <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
                   <Text style={styles.modalTitle}>
-                    {editId === null ? "🆕 Thêm công việc" : "✏️ Sửa công việc"}
+                    {editingTodo ? "✏️ Sửa công việc" : "➕ Thêm công việc"}
                   </Text>
                   <TextInput
                     style={styles.input}
-                    value={modalTitleValue}
-                    onChangeText={setModalTitleValue}
-                    placeholder="Nhập tiêu đề..."
-                    autoFocus
+                    placeholder="Nhập tiêu đề công việc..."
+                    value={titleInput}
+                    onChangeText={setTitleInput}
                   />
-                  <View style={{ flexDirection: "row", marginTop: 8 }}>
-                    <View style={{ flex: 1, marginRight: 6 }}>
-                      <Button title="Lưu" onPress={handleSaveModal} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 6 }}>
-                      <Button
-                        title="Hủy"
-                        color="gray"
-                        onPress={() => {
-                          setModalVisible(false);
-                          setEditId(null);
-                          setModalTitleValue("");
-                        }}
-                      />
-                    </View>
+                  <View style={styles.modalButtons}>
+                    <Button title="💾 Lưu" onPress={handleSave} />
+                    <Button
+                      title="❌ Đóng"
+                      onPress={() => setModalVisible(false)}
+                    />
                   </View>
                 </View>
               </View>
@@ -234,6 +256,7 @@ export default function App() {
   );
 }
 
+// ====================== STYLE ======================
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", paddingTop: 20 },
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
@@ -245,6 +268,12 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
   },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "90%",
+    marginBottom: 10,
+  },
   todoItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -255,54 +284,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: "90%",
   },
-  todoText: { fontSize: 16, flex: 1 },
+  todoText: { fontSize: 16 },
   doneText: { textDecorationLine: "line-through", color: "gray" },
   empty: { fontSize: 16, color: "#777", marginVertical: 12 },
-  actions: { flexDirection: "row", gap: 8 },
-  actionButton: {
+  deleteButton: {
+    backgroundColor: "red",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
-
-  // Floating add button
-  addButton: {
-    position: "absolute",
-    right: 20,
-    bottom: 26,
-    backgroundColor: "#007bff",
-    borderRadius: 30,
-    width: 60,
-    height: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  addText: { color: "#fff", fontSize: 30, fontWeight: "bold" },
-
-  // Modal
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    width: "86%",
+    width: "85%",
     backgroundColor: "white",
+    padding: 20,
     borderRadius: 10,
-    padding: 18,
+    elevation: 5,
   },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 8 },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    width: "100%",
-    borderRadius: 8,
-    padding: 10,
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 10,
   },
+  modalButtons: { flexDirection: "row", justifyContent: "space-around" },
 });
