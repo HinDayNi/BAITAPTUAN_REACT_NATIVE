@@ -89,4 +89,12 @@ export async function deleteTodo(id: number) {
   await database.runAsync("DELETE FROM todos WHERE id = ?", [id]);
 }
 
+export async function updateTodoTitle(id: number, newTitle: string) {
+  const database = await openDB();
+  await database.runAsync("UPDATE todos SET title = ? WHERE id = ?", [
+    newTitle,
+    id,
+  ]);
+}
+
 export default openDB;
