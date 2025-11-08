@@ -65,4 +65,15 @@ export async function initDatabase() {
   }
 }
 
+export async function getTodos() {
+  const database = await openDB();
+  const todos = await database.getAllAsync<{
+    id: number;
+    title: string;
+    done: number;
+    created_at: number;
+  }>("SELECT * FROM todos ORDER BY created_at DESC");
+  return todos;
+}
+
 export default openDB;
