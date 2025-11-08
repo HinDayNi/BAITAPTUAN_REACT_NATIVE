@@ -49,9 +49,65 @@ export default function App() {
       );
       setTitle("");
       setModalVisible(false);
-      loadTodos(); // Refresh lại danh sách
+      loadTodos();
     } catch (err) {
       console.error("❌ Insert todo error:", err);
+    }
+  };
+
+  // 🔹 Toggle trạng thái done
+  const toggleDone = async (id: number, current: number) => {
+    try {
+      await execSqlAsync("UPDATE todos SET done = ? WHERE id = ?", [
+        current ? 0 : 1,
+        id,
+      ]);
+      loadTodos();
+    } catch (err) {
+      console.error("❌ Toggle error:", err);
+    }
+  };
+
+  // 🔹 Xóa todo
+  const deleteTodo = async (id: number) => {
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa công việc này?", [
+      { text: "Hủy" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await execSqlAsync("DELETE FROM todos WHERE id = ?", [id]);
+            loadTodos();
+          } catch (err) {
+            console.error("❌ Delete error:", err);
+          }
+        },
+      },
+    ]);
+  };
+
+  // 🔹 Đồng bộ API (1 lần)
+  const syncFromAPI = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://jsonplaceholder.typicode.com/todos?_limit=5"
+      );
+      const data = await response.json();
+
+      for (const item of data) {
+        await execSqlAsync(
+          "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
+          [item.title, item.completed ? 1 : 0, Date.now()]
+        );
+      }
+      Alert.alert("✅ Đồng bộ xong", "Đã thêm 5 bản ghi từ API");
+      loadTodos();
+    } catch (err) {
+      console.error("❌ Sync error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +121,7 @@ export default function App() {
         {loading ? (
           <>
             <ActivityIndicator />
-            <Text style={{ marginTop: 12 }}>Đang kiểm tra kết nối DB...</Text>
+            <Text style={{ marginTop: 12 }}>Đang tải dữ liệu...</Text>
           </>
         ) : ok ? (
           <>
@@ -78,21 +134,29 @@ export default function App() {
                 data={todos}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
-                  <View style={styles.todoItem}>
-                    <Text
-                      style={[
-                        styles.todoText,
-                        item.done ? styles.doneText : null,
-                      ]}
-                    >
-                      {item.title}
-                    </Text>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() => toggleDone(item.id, item.done)}
+                  >
+                    <View style={styles.todoItem}>
+                      <Text
+                        style={[
+                          styles.todoText,
+                          item.done ? styles.doneText : null,
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Button title="🗑️" onPress={() => deleteTodo(item.id)} />
+                    </View>
+                  </TouchableOpacity>
                 )}
               />
             )}
 
-            <Button title="🔄 Tải lại" onPress={loadTodos} />
+            <View style={styles.bottomActions}>
+              <Button title="🌐 Đồng bộ API" onPress={syncFromAPI} />
+              <Button title="🔄 Tải lại" onPress={loadTodos} />
+            </View>
 
             {/* 🔹 Nút thêm mới */}
             <TouchableOpacity
@@ -151,12 +215,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     width: "90%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   todoText: { fontSize: 16 },
   doneText: { textDecorationLine: "line-through", color: "gray" },
   empty: { fontSize: 16, color: "#777", marginVertical: 12 },
-
-  // Modal
+  bottomActions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "90%",
+    marginVertical: 10,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.3)",
@@ -181,8 +252,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-
-  // Nút thêm
   addButton: {
     position: "absolute",
     right: 25,
