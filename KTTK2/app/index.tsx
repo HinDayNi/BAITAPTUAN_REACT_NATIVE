@@ -18,8 +18,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [ok, setOk] = useState<boolean | null>(null);
   const [todos, setTodos] = useState<any[]>([]);
+
+  // 🔹 Modal thêm/sửa
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
+  const [editingTodo, setEditingTodo] = useState<any | null>(null);
 
   // 🔹 Load danh sách todos
   const loadTodos = async () => {
@@ -36,22 +39,48 @@ export default function App() {
     }
   };
 
-  // 🔹 Thêm mới todo
-  const addTodo = async () => {
+  // 🔹 Mở modal để thêm mới
+  const openAddModal = () => {
+    setEditingTodo(null);
+    setTitle("");
+    setModalVisible(true);
+  };
+
+  // 🔹 Mở modal sửa todo
+  const openEditModal = (todo: any) => {
+    setEditingTodo(todo);
+    setTitle(todo.title);
+    setModalVisible(true);
+  };
+
+  // 🔹 Lưu (thêm hoặc cập nhật)
+  const saveTodo = async () => {
     if (!title.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập tiêu đề công việc!");
       return;
     }
+
     try {
-      await execSqlAsync(
-        "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
-        [title.trim(), 0, Date.now()]
-      );
-      setTitle("");
+      if (editingTodo) {
+        // Cập nhật
+        await execSqlAsync("UPDATE todos SET title = ? WHERE id = ?", [
+          title.trim(),
+          editingTodo.id,
+        ]);
+      } else {
+        // Thêm mới
+        await execSqlAsync(
+          "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
+          [title.trim(), 0, Date.now()]
+        );
+      }
+
       setModalVisible(false);
+      setEditingTodo(null);
+      setTitle("");
       loadTodos();
     } catch (err) {
-      console.error("❌ Insert todo error:", err);
+      console.error("❌ Save todo error:", err);
     }
   };
 
@@ -134,10 +163,12 @@ export default function App() {
                 data={todos}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => toggleDone(item.id, item.done)}
-                  >
-                    <View style={styles.todoItem}>
+                  <View style={styles.todoItem}>
+                    <TouchableOpacity
+                      onPress={() => toggleDone(item.id, item.done)}
+                      onLongPress={() => openEditModal(item)}
+                      style={{ flex: 1 }}
+                    >
                       <Text
                         style={[
                           styles.todoText,
@@ -146,9 +177,13 @@ export default function App() {
                       >
                         {item.title}
                       </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.itemButtons}>
+                      <Button title="✏️" onPress={() => openEditModal(item)} />
                       <Button title="🗑️" onPress={() => deleteTodo(item.id)} />
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 )}
               />
             )}
@@ -159,14 +194,11 @@ export default function App() {
             </View>
 
             {/* 🔹 Nút thêm mới */}
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setModalVisible(true)}
-            >
+            <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
               <Text style={styles.addText}>＋</Text>
             </TouchableOpacity>
 
-            {/* 🔹 Modal thêm mới */}
+            {/* 🔹 Modal thêm/sửa */}
             <Modal
               visible={modalVisible}
               animationType="slide"
@@ -175,7 +207,9 @@ export default function App() {
             >
               <View style={styles.modalOverlay}>
                 <View style={styles.modalBox}>
-                  <Text style={styles.modalTitle}>Thêm công việc mới</Text>
+                  <Text style={styles.modalTitle}>
+                    {editingTodo ? "✏️ Sửa công việc" : "🆕 Thêm công việc mới"}
+                  </Text>
                   <TextInput
                     placeholder="Nhập tiêu đề..."
                     value={title}
@@ -187,7 +221,7 @@ export default function App() {
                       title="Hủy"
                       onPress={() => setModalVisible(false)}
                     />
-                    <Button title="Lưu" onPress={addTodo} />
+                    <Button title="Lưu" onPress={saveTodo} />
                   </View>
                 </View>
               </View>
@@ -252,6 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  itemButtons: { flexDirection: "row", gap: 4 },
   addButton: {
     position: "absolute",
     right: 25,
