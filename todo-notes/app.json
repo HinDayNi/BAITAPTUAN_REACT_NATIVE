@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "TodoNotesApp",
-    "slug": "TodoNotesApp",
+    "name": "todo-notes",
+    "slug": "todo-notes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "todonotesapp",
+    "scheme": "todonotes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -38,7 +38,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
