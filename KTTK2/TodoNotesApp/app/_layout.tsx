@@ -1,6 +1,6 @@
-import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { initDatabase, createTodosTable, seedTodos } from "@/utils/db";
+import TodoListScreen from "./index";
 
 export default function RootLayout() {
   useEffect(() => {
@@ -21,5 +21,5 @@ export default function RootLayout() {
     setupDatabase();
   }, []);
 
-  return <Stack />;
+  return <TodoListScreen />;
 }
