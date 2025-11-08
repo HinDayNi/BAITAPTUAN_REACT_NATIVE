@@ -1,39 +1,25 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 import { useEffect } from "react";
-
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { initDatabase } from "@/utils/db";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import { initDatabase, createTodosTable, seedTodos } from "@/utils/db";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   useEffect(() => {
-    initDatabase().catch((error) => {
-      console.error("Failed to initialize database:", error);
-    });
+    const setupDatabase = async () => {
+      try {
+        // Initialize database connection
+        await initDatabase();
+        // Create todos table if not exists
+        await createTodosTable();
+        // Seed sample data if empty
+        await seedTodos();
+        console.log("✓ Database setup completed");
+      } catch (error) {
+        console.error("✗ Failed to setup database:", error);
+      }
+    };
+
+    setupDatabase();
   }, []);
 
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+  return <Stack />;
 }
