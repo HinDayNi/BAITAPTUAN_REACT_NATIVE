@@ -12,11 +12,18 @@ export async function openDB() {
 }
 
 // 🔹 Hàm thực thi SQL
-export async function execSqlAsync(sql: string, params: (string | number)[] = []) {
+export async function execSqlAsync(
+  sql: string,
+  params: (string | number)[] = []
+) {
   const database = await openDB();
   try {
     // expo-sqlite's execAsync accepts only the SQL string; use runAsync for parameterized statements.
-    if (params && params.length > 0 && typeof (database as any).runAsync === "function") {
+    if (
+      params &&
+      params.length > 0 &&
+      typeof (database as any).runAsync === "function"
+    ) {
       const result = await (database as any).runAsync(sql, params);
       return result;
     } else {
@@ -74,6 +81,12 @@ export async function getTodos() {
     created_at: number;
   }>("SELECT * FROM todos ORDER BY created_at DESC");
   return todos;
+}
+
+// 🔹 Xóa 1 todo theo id
+export async function deleteTodo(id: number) {
+  const database = await openDB();
+  await database.runAsync("DELETE FROM todos WHERE id = ?", [id]);
 }
 
 export default openDB;
