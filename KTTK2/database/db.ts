@@ -1,9 +1,8 @@
 import * as SQLite from "expo-sqlite";
 
-// 🔹 Biến lưu kết nối DB (mở 1 lần duy nhất)
+// 🔹 Kết nối DB
 let db: SQLite.SQLiteDatabase | null = null;
 
-// 🔹 Mở database (đảm bảo chỉ mở 1 kết nối)
 export async function openDB() {
   if (!db) {
     db = await SQLite.openDatabaseAsync("todo_notes.db");
@@ -12,11 +11,10 @@ export async function openDB() {
   return db;
 }
 
-// 🔹 Hàm khởi tạo bảng + seed dữ liệu mẫu
+// 🔹 Tạo bảng và seed mẫu
 export async function initDatabase() {
   const database = await openDB();
   try {
-    // Tạo bảng nếu chưa có
     await database.execAsync(`
       CREATE TABLE IF NOT EXISTS todos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,13 +24,13 @@ export async function initDatabase() {
       );
     `);
 
-    // Đếm số lượng bản ghi
+    // Kiểm tra có dữ liệu chưa
     const rows = await database.getAllAsync<{ count: number }>(
       "SELECT COUNT(*) as count FROM todos"
     );
     const count = rows[0]?.count ?? 0;
 
-    // Nếu chưa có dữ liệu → thêm 2 dòng mẫu
+    // Seed nếu rỗng
     if (count === 0) {
       await database.runAsync(
         "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
@@ -55,16 +53,15 @@ export async function initDatabase() {
 // 🔹 Lấy tất cả todos
 export async function getTodos() {
   const database = await openDB();
-  const todos = await database.getAllAsync<{
+  return await database.getAllAsync<{
     id: number;
     title: string;
     done: number;
     created_at: number;
-  }>("SELECT * FROM todos ORDER BY created_at DESC");
-  return todos;
+  }>("SELECT * FROM todos ORDER BY done ASC, created_at DESC");
 }
 
-// 🔹 Thêm todo mới
+// 🔹 Thêm mới
 export async function addTodo(title: string) {
   const database = await openDB();
   await database.runAsync(
@@ -73,36 +70,39 @@ export async function addTodo(title: string) {
   );
 }
 
-// 🔹 Cập nhật todo (đổi title, done, …)
+// 🔹 Cập nhật todo (chỉ sửa title hoặc done)
 export async function updateTodo(todo: {
   id: number;
-  title: string;
+  title?: string;
   done?: number;
 }) {
   const database = await openDB();
-  await database.runAsync("UPDATE todos SET title = ?, done = ? WHERE id = ?", [
-    todo.title,
-    todo.done ?? 0,
-    todo.id,
-  ]);
+  if (todo.title !== undefined) {
+    await database.runAsync("UPDATE todos SET title = ? WHERE id = ?", [
+      todo.title,
+      todo.id,
+    ]);
+  }
+  if (todo.done !== undefined) {
+    await database.runAsync("UPDATE todos SET done = ? WHERE id = ?", [
+      todo.done,
+      todo.id,
+    ]);
+  }
 }
 
-// 🔹 Cập nhật riêng title (nếu cần)
-export async function updateTodoTitle(id: number, newTitle: string) {
-  const database = await openDB();
-  await database.runAsync("UPDATE todos SET title = ? WHERE id = ?", [
-    newTitle,
-    id,
-  ]);
-}
-
-// 🔹 Xóa todo theo id
+// 🔹 Xóa todo
 export async function deleteTodo(id: number) {
   const database = await openDB();
   await database.runAsync("DELETE FROM todos WHERE id = ?", [id]);
 }
 
-// ✅ Export default để tiện import
+// 🔹 Hàm SQL tiện ích
+export async function execSqlAsync(sql: string, params: any[] = []) {
+  const database = await openDB();
+  return await database.runAsync(sql, params);
+}
+
 export default {
   openDB,
   initDatabase,

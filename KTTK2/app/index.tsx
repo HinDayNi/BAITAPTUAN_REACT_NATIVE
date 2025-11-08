@@ -1,68 +1,38 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  ActivityIndicator,
-  Button,
   FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
   TextInput,
+  TouchableOpacity,
   Modal,
   RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import axios from "axios";
-import {
-  initDatabase,
-  getTodos,
-  addTodo,
-  updateTodo,
-  deleteTodo,
-  openDB,
-} from "../database/db";
+import { useTodos } from "../hooks/useTodos";
 
 export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [ok, setOk] = useState<boolean | null>(null);
-  const [todos, setTodos] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  const {
+    todos,
+    loading,
+    refreshing,
+    searchText,
+    setSearchText,
+    add,
+    edit,
+    remove,
+    toggleDone,
+    importFromAPI,
+    onRefresh,
+  } = useTodos();
 
-  // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTodo, setEditingTodo] = useState<any | null>(null);
   const [titleInput, setTitleInput] = useState("");
 
-  // ====================== LOAD TODOS ======================
-  const loadTodos = useCallback(async () => {
-    try {
-      await initDatabase();
-      const data = await getTodos();
-      setTodos(data);
-      setOk(true);
-    } catch (e) {
-      console.error("❌ Load todos error:", e);
-      setOk(false);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTodos();
-  }, [loadTodos]);
-
-  // ====================== PULL-TO-REFRESH ======================
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadTodos();
-  }, [loadTodos]);
-
-  // ====================== MODAL: ADD / EDIT ======================
-  const openModal = useCallback((todo?: any) => {
+  const openModal = (todo?: any) => {
     if (todo) {
       setEditingTodo(todo);
       setTitleInput(todo.title);
@@ -71,229 +41,242 @@ export default function App() {
       setTitleInput("");
     }
     setModalVisible(true);
-  }, []);
+  };
 
-  const handleSave = useCallback(async () => {
-    if (!titleInput.trim()) {
-      Alert.alert("⚠️ Lỗi", "Vui lòng nhập tiêu đề công việc!");
-      return;
-    }
-    try {
-      if (editingTodo) {
-        await updateTodo({ ...editingTodo, title: titleInput });
-      } else {
-        await addTodo(titleInput);
-      }
-      setModalVisible(false);
-      await loadTodos();
-    } catch (e) {
-      console.error("❌ Save error:", e);
-    }
-  }, [editingTodo, titleInput, loadTodos]);
-
-  // ====================== DELETE ======================
-  const handleDelete = useCallback(
-    (id: number) => {
-      Alert.alert("Xác nhận xóa", "Bạn có chắc muốn xóa công việc này không?", [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteTodo(id);
-              await loadTodos();
-            } catch (e) {
-              console.error("❌ Delete error:", e);
-            }
-          },
-        },
-      ]);
-    },
-    [loadTodos]
-  );
-
-  // ====================== SEARCH FILTER ======================
-  const filteredTodos = useMemo(() => {
-    if (!search.trim()) return todos;
-    const lower = search.toLowerCase();
-    return todos.filter((t) => t.title.toLowerCase().includes(lower));
-  }, [todos, search]);
-
-  // ====================== FETCH + MERGE API ======================
-  const syncFromApi = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        "https://jsonplaceholder.typicode.com/todos?_limit=10"
-      );
-      const apiTodos = res.data.map((t: any) => ({
-        title: t.title,
-        done: t.completed ? 1 : 0,
-        created_at: Date.now(),
-      }));
-
-      const db = await openDB();
-
-      for (const todo of apiTodos) {
-        const existing = await db.getFirstAsync<{ count: number }>(
-          "SELECT COUNT(*) as count FROM todos WHERE title = ?",
-          [todo.title]
-        );
-        if (!existing || existing.count === 0) {
-          await db.runAsync(
-            "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
-            [todo.title, todo.done, todo.created_at]
-          );
-        }
-      }
-
-      Alert.alert("✅ Thành công", "Đã đồng bộ dữ liệu từ API!");
-      await loadTodos();
-    } catch (e) {
-      console.error("❌ Sync error:", e);
-      Alert.alert("❌ Lỗi", "Không thể kết nối hoặc đồng bộ dữ liệu từ API!");
-    } finally {
-      setLoading(false);
-    }
-  }, [loadTodos]);
-
-  // ====================== UI ======================
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
+        <Text style={styles.header}>📋 Todo Notes</Text>
+
+        <TextInput
+          placeholder="🔍 Tìm kiếm công việc..."
+          value={searchText}
+          onChangeText={setSearchText}
+          style={styles.searchInput}
+        />
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#4CAF50" }]}
+            onPress={() => openModal()}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>➕ Thêm</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#2196F3" }]}
+            onPress={importFromAPI}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>🌐 Đồng bộ</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
-          <>
-            <ActivityIndicator />
-            <Text style={{ marginTop: 12 }}>Đang tải dữ liệu...</Text>
-          </>
-        ) : ok ? (
-          <>
-            <Text style={styles.title}>📋 Danh sách công việc</Text>
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#2196F3" />
+            <Text style={{ marginTop: 8 }}>Đang tải dữ liệu...</Text>
+          </View>
+        ) : todos.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>✨</Text>
+            <Text style={styles.emptyText}>Chưa có công việc nào!</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={todos}
+            keyExtractor={(item) => item.id.toString()}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            contentContainerStyle={{ paddingBottom: 80 }}
+            renderItem={({ item }) => (
+              <View style={styles.todoItem}>
+                <TouchableOpacity
+                  onPress={() => toggleDone(item.id, item.done)}
+                  style={[
+                    styles.doneBox,
+                    item.done ? styles.doneChecked : styles.doneUnchecked,
+                  ]}
+                >
+                  {item.done ? <Text>✅</Text> : <Text>⬜</Text>}
+                </TouchableOpacity>
 
-            {/* 🔍 Ô tìm kiếm */}
-            <TextInput
-              style={styles.searchInput}
-              placeholder="🔍 Tìm kiếm công việc..."
-              value={search}
-              onChangeText={setSearch}
-            />
-
-            {/* 🔘 Thêm + Đồng bộ */}
-            <View style={styles.buttonRow}>
-              <Button title="➕ Thêm" onPress={() => openModal()} />
-              <Button title="🌐 Đồng bộ API" onPress={syncFromApi} />
-            </View>
-
-            {/* 🔹 Danh sách công việc */}
-            {filteredTodos.length === 0 ? (
-              <Text style={styles.empty}>Không có kết quả phù hợp</Text>
-            ) : (
-              <FlatList
-                data={filteredTodos}
-                keyExtractor={(item) => item.id.toString()}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                  />
-                }
-                renderItem={({ item }) => (
-                  <View style={styles.todoItem}>
-                    <TouchableOpacity
-                      onPress={() => openModal(item)}
-                      style={{ flex: 1 }}
-                    >
-                      <Text
-                        style={[
-                          styles.todoText,
-                          item.done ? styles.doneText : null,
-                        ]}
-                      >
-                        {item.title}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDelete(item.id)}
-                      style={styles.deleteButton}
-                    >
-                      <Text style={{ color: "white" }}>Xóa</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            )}
-
-            {/* 🪄 Modal thêm/sửa */}
-            <Modal visible={modalVisible} transparent animationType="slide">
-              <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>
-                    {editingTodo ? "✏️ Sửa công việc" : "➕ Thêm công việc"}
+                <TouchableOpacity
+                  onPress={() => openModal(item)}
+                  style={{ flex: 1 }}
+                >
+                  <Text
+                    style={[
+                      styles.todoText,
+                      item.done ? styles.doneText : null,
+                    ]}
+                  >
+                    {item.title}
                   </Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Nhập tiêu đề công việc..."
-                    value={titleInput}
-                    onChangeText={setTitleInput}
-                  />
-                  <View style={styles.modalButtons}>
-                    <Button title="💾 Lưu" onPress={handleSave} />
-                    <Button
-                      title="❌ Đóng"
-                      onPress={() => setModalVisible(false)}
-                    />
-                  </View>
+                </TouchableOpacity>
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    onPress={() => openModal(item)}
+                    style={styles.editButton}
+                  >
+                    <Text style={styles.editText}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => remove(item.id)}
+                    style={styles.deleteButton}
+                  >
+                    <Text style={styles.deleteText}>🗑</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-            </Modal>
-          </>
-        ) : (
-          <Text>❌ Không thể kết nối DB</Text>
+            )}
+          />
         )}
+
+        {/* Modal thêm/sửa */}
+        <Modal visible={modalVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                {editingTodo ? "✏️ Sửa công việc" : "➕ Thêm công việc"}
+              </Text>
+
+              <TextInput
+                placeholder="Nhập tiêu đề công việc..."
+                value={titleInput}
+                onChangeText={setTitleInput}
+                style={styles.input}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: "#4CAF50" }]}
+                  onPress={() => {
+                    editingTodo
+                      ? edit(editingTodo.id, titleInput)
+                      : add(titleInput);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalBtnText}>💾 Lưu</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: "#999" }]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.modalBtnText}>❌ Đóng</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
-// ====================== STYLE ======================
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", paddingTop: 20 },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+    color: "#333",
+  },
   searchInput: {
-    width: "90%",
-    borderColor: "#ccc",
     borderWidth: 1,
+    borderColor: "#ddd",
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     marginBottom: 12,
+    backgroundColor: "white",
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    width: "90%",
-    marginBottom: 10,
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  actionButton: {
+    flex: 0.48,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "600",
   },
   todoItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "white",
     padding: 12,
-    backgroundColor: "#f2f2f2",
     borderRadius: 8,
     marginBottom: 8,
-    width: "90%",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  todoText: { fontSize: 16 },
-  doneText: { textDecorationLine: "line-through", color: "gray" },
-  empty: { fontSize: 16, color: "#777", marginVertical: 12 },
+  doneBox: {
+    marginRight: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 28,
+  },
+  doneChecked: {
+    opacity: 0.8,
+  },
+  doneUnchecked: {
+    opacity: 0.4,
+  },
+  todoText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  doneText: {
+    textDecorationLine: "line-through",
+    color: "#999",
+  },
   deleteButton: {
-    backgroundColor: "red",
+    backgroundColor: "#E53935",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
+    marginLeft: 8,
   },
-  modalContainer: {
+  deleteText: {
+    color: "white",
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyIcon: {
+    fontSize: 36,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#777",
+    marginTop: 8,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
@@ -302,17 +285,51 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "85%",
     backgroundColor: "white",
+    borderRadius: 12,
     padding: 20,
-    borderRadius: 10,
-    elevation: 5,
   },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 10,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 16,
   },
-  modalButtons: { flexDirection: "row", justifyContent: "space-around" },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalBtn: {
+    flex: 0.48,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalBtnText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  editButton: {
+    backgroundColor: "#FFC107",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  editText: {
+    color: "white",
+    fontSize: 16,
+  },
 });
