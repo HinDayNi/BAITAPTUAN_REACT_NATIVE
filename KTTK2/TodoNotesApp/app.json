@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "KTTK2",
-    "slug": "KTTK2",
+    "name": "TodoNotesApp",
+    "slug": "TodoNotesApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "kttk2",
+    "scheme": "todonotesapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
