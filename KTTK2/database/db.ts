@@ -1,30 +1,68 @@
 import * as SQLite from "expo-sqlite";
 
-const db = SQLite.openDatabaseSync("todo_notes.db");
+let db: SQLite.SQLiteDatabase | null = null;
 
-export function execSqlAsync(sql: string, params: (string | number)[] = []) {
-  return new Promise((resolve, reject) => {
-    db.withTransactionAsync(async () => {
-      try {
-        const result = await (db as any).execAsync(sql, params);
-        resolve(result);
-      } catch (err) {
-        reject(err);
-        throw err;
-      }
-    }).catch((err: any) => reject(err));
-  });
+// 🔹 Hàm mở kết nối database (gọi 1 lần duy nhất)
+export async function openDB() {
+  if (!db) {
+    db = await SQLite.openDatabaseAsync("todo_notes.db");
+    console.log("✅ Database connected");
+  }
+  return db;
 }
 
-export async function testConnection() {
+// 🔹 Hàm thực thi SQL
+export async function execSqlAsync(sql: string, params: (string | number)[] = []) {
+  const database = await openDB();
   try {
-    await execSqlAsync("SELECT 1;");
-    console.log("✅ SQLite connected successfully");
-    return true;
-  } catch (e) {
-    console.error("❌ DB connection failed:", e);
-    return false;
+    // expo-sqlite's execAsync accepts only the SQL string; use runAsync for parameterized statements.
+    if (params && params.length > 0 && typeof (database as any).runAsync === "function") {
+      const result = await (database as any).runAsync(sql, params);
+      return result;
+    } else {
+      const result = await database.execAsync(sql);
+      return result;
+    }
+  } catch (err) {
+    console.error("❌ SQL exec error:", err);
+    throw err;
   }
 }
 
-export { db };
+// 🔹 Hàm tạo bảng + seed dữ liệu
+export async function initDatabase() {
+  const database = await openDB();
+
+  try {
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        done INTEGER DEFAULT 0,
+        created_at INTEGER
+      );
+    `);
+
+    const res = await database.getFirstAsync<{ count: number }>(
+      "SELECT COUNT(*) as count FROM todos"
+    );
+
+    if (res && res.count === 0) {
+      await database.runAsync(
+        "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
+        ["Học React Native", 0, Date.now()]
+      );
+      await database.runAsync(
+        "INSERT INTO todos (title, done, created_at) VALUES (?, ?, ?)",
+        ["Ôn bài kiểm tra", 1, Date.now()]
+      );
+      console.log("✅ Seeded 2 sample todos");
+    }
+
+    console.log("✅ Database initialized successfully");
+  } catch (err) {
+    console.error("❌ Database init error:", err);
+  }
+}
+
+export default openDB;

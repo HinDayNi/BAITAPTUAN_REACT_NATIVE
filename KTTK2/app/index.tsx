@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator, Button } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { testConnection } from "../database/db";
+import { initDatabase } from "../database/db";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -10,8 +10,8 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await testConnection();
-        setOk(res);
+        await initDatabase();
+        setOk(true);
       } catch (e) {
         setOk(false);
       } finally {
@@ -39,9 +39,14 @@ export default function App() {
               title="Re-check"
               onPress={async () => {
                 setLoading(true);
-                const res = await testConnection();
-                setOk(res);
-                setLoading(false);
+                try {
+                  await initDatabase();
+                  setOk(true);
+                } catch (e) {
+                  setOk(false);
+                } finally {
+                  setLoading(false);
+                }
               }}
             />
           </>
